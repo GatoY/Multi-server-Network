@@ -17,45 +17,40 @@ import org.json.simple.parser.ParseException;
 import activitystreamer.util.Settings;
 
 public class ClientSkeleton extends Thread {
-	private static final Logger log = LogManager.getLogger();
-	private static ClientSkeleton clientSolution;
-	private TextFrame textFrame;
-	
+    private static final Logger log = LogManager.getLogger();
+    private static ClientSkeleton clientSolution;
+    private TextFrame textFrame;
 
-	
-	public static ClientSkeleton getInstance(){
-		if(clientSolution==null){
-			clientSolution = new ClientSkeleton();
-		}
-		return clientSolution;
-	}
-	
-	public ClientSkeleton(){
-		
-		
-		textFrame = new TextFrame();
-		start();
-	}
-	
-	
-	
-	
-	
-	
-	@SuppressWarnings("unchecked")
-	public void sendActivityObject(JSONObject activityObj){
-		
-	}
-	
-	
-	public void disconnect(){
-		
-	}
-	
-	
-	public void run(){
 
-	}
+    public static ClientSkeleton getInstance() {
+        if (clientSolution == null) {
+            clientSolution = new ClientSkeleton();
+        }
+        return clientSolution;
+    }
 
-	
+    public ClientSkeleton() {
+
+
+        textFrame = new TextFrame();
+        start();
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public void sendActivityObject(JSONObject activityObj) {
+
+    }
+
+
+    public void disconnect() {
+
+    }
+
+
+    public void run() {
+
+    }
+
+
 }
