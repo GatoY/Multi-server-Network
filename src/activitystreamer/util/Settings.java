@@ -17,40 +17,43 @@ public class Settings {
 	private static int activityInterval = 5000; // milliseconds
 	private static String secret = null;
 	private static String username = "anonymous";
-	//-yu, server id.
+	// -yu, server id.
 	private static String serverId;
-	//-yu set server id.
+
+	// -yu set server id.
 	public static void setServerId() {
 		return;
 	}
-	//-yu get server id.
+
+	// -yu get server id.
 	public static String getServerId() {
 		return serverId;
 	}
+
 	public static int getLocalPort() {
 		return localPort;
 	}
 
 	public static void setLocalPort(int localPort) {
-		if(localPort<0 || localPort>65535){
-			log.error("supplied port "+localPort+" is out of range, using "+getLocalPort());
+		if (localPort < 0 || localPort > 65535) {
+			log.error("supplied port " + localPort + " is out of range, using " + getLocalPort());
 		} else {
 			Settings.localPort = localPort;
 		}
 	}
-	
+
 	public static int getRemotePort() {
 		return remotePort;
 	}
 
 	public static void setRemotePort(int remotePort) {
-		if(remotePort<0 || remotePort>65535){
-			log.error("supplied port "+remotePort+" is out of range, using "+getRemotePort());
+		if (remotePort < 0 || remotePort > 65535) {
+			log.error("supplied port " + remotePort + " is out of range, using " + getRemotePort());
 		} else {
 			Settings.remotePort = remotePort;
 		}
 	}
-	
+
 	public static String getRemoteHostname() {
 		return remoteHostname;
 	}
@@ -58,7 +61,7 @@ public class Settings {
 	public static void setRemoteHostname(String remoteHostname) {
 		Settings.remoteHostname = remoteHostname;
 	}
-	
+
 	public static int getActivityInterval() {
 		return activityInterval;
 	}
@@ -66,7 +69,7 @@ public class Settings {
 	public static void setActivityInterval(int activityInterval) {
 		Settings.activityInterval = activityInterval;
 	}
-	
+
 	public static String getSecret() {
 		return secret;
 	}
@@ -74,7 +77,7 @@ public class Settings {
 	public static void setSecret(String s) {
 		secret = s;
 	}
-	
+
 	public static String getUsername() {
 		return username;
 	}
@@ -82,7 +85,7 @@ public class Settings {
 	public static void setUsername(String username) {
 		Settings.username = username;
 	}
-	
+
 	public static String getLocalHostname() {
 		return localHostname;
 	}
@@ -91,20 +94,16 @@ public class Settings {
 		Settings.localHostname = localHostname;
 	}
 
-	
 	/*
 	 * some general helper functions
 	 */
-	
-	public static String socketAddress(Socket socket){
-		return socket.getInetAddress()+":"+socket.getPort();
+
+	public static String socketAddress(Socket socket) {
+		return socket.getInetAddress() + ":" + socket.getPort();
 	}
 
 	public static String nextSecret() {
-	    return new BigInteger(130, random).toString(32);
-	 }
+		return new BigInteger(130, random).toString(32);
+	}
 
-
-
-	
 }

@@ -173,8 +173,8 @@ public class Control extends Thread {
 		log.info("using activity interval of " + Settings.getActivityInterval() + " milliseconds");
 		while (!term) {
 			// do something with 5 second intervals in between
-			for(Connection connection : connections) {
-				JSONObject announce=new JSONObject();
+			for (Connection connection : connections) {
+				JSONObject announce = new JSONObject();
 				announce.put("command", "SERVER_ANNOUNCE");
 				announce.put("id", Settings.getServerId());
 				announce.put("load", connections.size());
