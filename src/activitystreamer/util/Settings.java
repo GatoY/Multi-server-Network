@@ -6,6 +6,7 @@ import java.security.SecureRandom;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import java.util.Random; //ms
 
 public class Settings {
@@ -20,14 +21,17 @@ public class Settings {
     private static String username = "anonymous";
     // -yu, server id.
     private static String serverId;
+    // -ms, serverIdLength
+    private static int serverIdLength = 26;
 
     // -ms set server id.
     public static void setServerId() {
         String range = "0123456789abcdefghijklmnopqrstuvwxyz";
+        Random rd = new Random();
         StringBuilder randomId = new StringBuilder();
         //randomId.length = 26
-        for (int i = 0; i < 26; i++){
-            randomId.append(range.charAt(random.nextInt(range.length())));
+        for (int i = 0; i < serverIdLength; i++) {
+            randomId.append(range.charAt(rd.nextInt(range.length())));
         }
         serverId = randomId.toString();
         return;
