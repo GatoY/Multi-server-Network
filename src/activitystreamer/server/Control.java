@@ -6,6 +6,8 @@ import java.util.ArrayList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 import activitystreamer.util.Settings;
 
@@ -53,6 +55,36 @@ public class Control extends Thread {
 	 * Return true if the connection should close.
 	 */
 	public synchronized boolean process(Connection con,String msg){
+		JSONObject request=(JSONObject) JSONValue.parse(msg);
+		
+		String commandFromClient=(String) request.get("command");
+		
+		if(commandFromClient.equals("INVALID_MESSAGE")) {
+			return true;
+		}
+		else if(commandFromClient.equals("AUTHENTICATION_FAIL")) {
+			return true;
+		}
+		else if(commandFromClient.equals("LOGIN")) {
+				login(request);
+				return false;
+			}
+		return false;
+	}
+	
+	public synchronized void login(JSONObject  request) {
+		if(request.containsKey("username")&&request.containsKey("password")){
+			String username=(String)request.get("username");
+			String password=(String)request.get("password");
+			if(validate(username, password)){
+				Settings.setUsername(username);
+				Settings.setSecret(password);
+				
+			}
+		}
+	}
+	
+	public boolean validate(String username, String password) {
 		return true;
 	}
 	
