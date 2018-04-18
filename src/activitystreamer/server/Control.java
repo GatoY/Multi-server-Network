@@ -26,7 +26,7 @@ public class Control extends Thread {
         return control;
     }
 
-    public Control() {
+    private Control() {
         // initialize the connections array
         connections = new ArrayList<>();
         // start a listener
@@ -144,9 +144,12 @@ public class Control extends Thread {
             connections.remove(con);
     }
 
-    /*
-     * A new incoming connection has been established, and a reference is returned
-     * to it
+    /**
+     * A new incoming connection has been established, and a reference is returned to it
+     *
+     * @param s
+     * @return
+     * @throws IOException >>>>>>> djz
      */
     public synchronized Connection incomingConnection(Socket s) throws IOException {
         log.debug("incomming connection: " + Settings.socketAddress(s));
@@ -156,9 +159,13 @@ public class Control extends Thread {
 
     }
 
-    /*
-     * A new outgoing connection has been established, and a reference is returned
-     * to it
+
+    /**
+     * A new outgoing connection has been established, and a reference is returned to it
+     *
+     * @param s
+     * @return
+     * @throws IOException
      */
     public synchronized Connection outgoingConnection(Socket s) throws IOException {
         log.debug("outgoing connection: " + Settings.socketAddress(s));
