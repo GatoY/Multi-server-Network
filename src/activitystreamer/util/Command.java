@@ -3,7 +3,7 @@ package activitystreamer.util;
 public class Command {
     public static final String AUTHENTICATE = "AUTHENTICATE";
     public static final String INVALID_MESSAGE = "INVALID_MESSAGE";
-    public static final String AUTHTENTICATION_FAIL = "AUTHTENTICATION_FAIL";
+    public static final String AUTHENTICATION_FAIL = "AUTHENTICATION_FAIL";
     public static final String LOGIN = "LOGIN";
     public static final String LOGIN_SUCCESS = "LOGIN_SUCCESS";
     public static final String REDIRECT = "REDIRECT";
