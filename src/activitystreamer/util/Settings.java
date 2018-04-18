@@ -17,8 +17,16 @@ public class Settings {
 	private static int activityInterval = 5000; // milliseconds
 	private static String secret = null;
 	private static String username = "anonymous";
-
-	
+	//-yu, server id.
+	private static String serverId;
+	//-yu set server id.
+	public static void setServerId() {
+		return;
+	}
+	//-yu get server id.
+	public static String getServerId() {
+		return serverId;
+	}
 	public static int getLocalPort() {
 		return localPort;
 	}
