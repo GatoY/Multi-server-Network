@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,7 +21,7 @@ public class ClientSkeleton extends Thread {
 	private static final Logger log = LogManager.getLogger();
 	private static ClientSkeleton clientSolution;
 	private TextFrame textFrame;
-	
+	private Socket s = null;
 
 	
 	public static ClientSkeleton getInstance(){
@@ -34,6 +35,7 @@ public class ClientSkeleton extends Thread {
 		
 		
 		textFrame = new TextFrame();
+		
 		start();
 	}
 	
@@ -44,17 +46,36 @@ public class ClientSkeleton extends Thread {
 	
 	@SuppressWarnings("unchecked")
 	public void sendActivityObject(JSONObject activityObj){
+		try {
+			DataOutputStream dos = new DataOutputStream(s.getOutputStream());
+			dos.writeUTF(activityObj.toJSONString());
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
 	}
 	
 	
 	public void disconnect(){
-		
+		try {
+			if (s != null) {
+				s.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	
 	public void run(){
-
+		try {
+			s = new Socket(Settings.getRemoteHostname(), Settings.getLocalPort());
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	
