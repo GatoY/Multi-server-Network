@@ -23,6 +23,8 @@ public class Settings {
     private static String serverId;
     // -ms, serverIdLength
     private static int serverIdLength = 26;
+    private static boolean isRemoteAuthenticated = false;
+    public static final String serverSecret = "gen1p85md2qnq0d59qll3fbcoa";
 
     // -ms set server id.
     public static void setServerId() {
@@ -118,4 +120,11 @@ public class Settings {
         return new BigInteger(130, random).toString(32);
     }
 
+    public static boolean isIsRemoteAuthenticated() {
+        return isRemoteAuthenticated;
+    }
+
+    public static void setIsRemoteAuthenticated(boolean isRemoteAuthenticated) {
+        Settings.isRemoteAuthenticated = isRemoteAuthenticated;
+    }
 }

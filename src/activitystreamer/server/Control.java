@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
 
+import activitystreamer.util.Message;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
@@ -51,24 +52,39 @@ public class Control extends Thread {
         }
     }
 
-    /*
-     * Processing incoming messages from the connection. Return true if the
-     * connection should close.
+
+    /**
+     * Processing incoming messages from the connection. Return true if the connection should close.
+     *
+     * @param con
+     * @param msg
+     * @return
      */
     public synchronized boolean process(Connection con, String msg) {
-        JSONObject request = (JSONObject) JSONValue.parse(msg);
-
-        String commandFromClient = (String) request.get("command");
-
-        if (commandFromClient.equals("INVALID_MESSAGE")) {
+        JSONObject request;
+        try {
+            request = (JSONObject) JSONValue.parse(msg);
+        } catch (Exception e) {
+            Message.invalidMsg(con, "the received message is not in valid format");
             return true;
-        } else if (commandFromClient.equals("AUTHENTICATION_FAIL")) {
+        }
+
+        if (request.get("command") == null) {
+            Message.invalidMsg(con, "the received message did not contain a command");
             return true;
-        } else if (commandFromClient.equals("LOGIN")) {
+        }
+
+        String command = (String) request.get("command");
+
+        if (command.equals(Message.INVALID_MESSAGE)) {
+            return true;
+        } else if (command.equals(Message.AUTHENTICATION_FAIL)) {
+            return true;
+        } else if (command.equals(Message.LOGIN)) {
             return !login(con, request);
-        } else if (commandFromClient.equals("LOGOUT")) {
+        } else if (command.equals(Message.LOGOUT)) {
             return true;
-        } else if (commandFromClient.equals("ACTIVITY_MESSAGE")) {
+        } else if (command.equals(Message.ACTIVITY_MESSAGE)) {
             if (request.containsKey("username")) {
                 String activityUsername = (String) request.get("username");
                 if (activityUsername.equals("anonymous")) {
@@ -79,31 +95,40 @@ public class Control extends Thread {
                 } else {
                     // no password.
                     if (!request.containsKey("password")) {
-                        authentication_fail(con);
+                        Message.authenticationFail(con, "");
                         return true;
                     }
                     String activityPassword = (String) request.get("password");
                     if (!activityUsername.equals(Settings.getUsername())
                             || !activityPassword.equals(Settings.getSecret())) {
-                        authentication_fail(con);
+                        Message.authenticationFail(con, "the supplied secret is incorrect: " + activityPassword);
                         return true;
                     }
                     broadcast();
                     return false;
                 }
             } else {
-                authentication_fail(con);
+                Message.authenticationFail(con, "the message did not contain a username"); //TODO
                 return true;
+            }
+        } else if (command.equals(Message.AUTHENTICATE)) {
+            if (request.get("secret") == null) {
+                Message.invalidMsg(con, "the received message did not contain a secret");
+            }
+            String secret = (String) request.get("secret");
+            if (!secret.equals(Settings.serverSecret)) {
+                // if the secret is incorrect
+                Message.authenticationFail(con, "the supplied secret is incorrect: " + secret);
+            } else if (Settings.isIsRemoteAuthenticated()) {
+                Message.invalidMsg(con, "the server has already successfully authenticated");
+            } else {
+                Settings.setIsRemoteAuthenticated(true);
+                // No reply if the authentication succeeded.
             }
         }
         return true;
     }
 
-    public synchronized void authentication_fail(Connection con) {
-        JSONObject response = new JSONObject();
-        response.put("command", "AUTHENTICATION_FAIL");
-        con.writeMsg(response.toJSONString());
-    }
 
     public synchronized void broadcast() {
         return;
@@ -117,16 +142,16 @@ public class Control extends Thread {
             if (validate(username, password)) {
                 Settings.setUsername(username);
                 Settings.setSecret(password);
-                response.put("command", "LOGIN_SUCCESS");
+                response.put("command", Message.LOGIN_SUCCESS);
                 con.writeMsg(response.toJSONString());
                 return true;
             } else {
-                response.put("command", "LOGIN_FAILED");
+                response.put("command", Message.LOGIN_FAILED);
                 response.put("info", "attempt to login with wrong secret");
             }
 
         } else {
-            response.put("command", "INVALID_MESSAGE");
+            response.put("command", Message.INVALID_MESSAGE);
         }
         con.writeMsg(response.toJSONString());
         return false;
@@ -136,12 +161,15 @@ public class Control extends Thread {
         return true;
     }
 
-    /*
+    /**
      * The connection has been closed by the other party.
+     *
+     * @param con
      */
     public synchronized void connectionClosed(Connection con) {
-        if (!term)
+        if (!term) {
             connections.remove(con);
+        }
     }
 
     /**
@@ -149,10 +177,10 @@ public class Control extends Thread {
      *
      * @param s
      * @return
-     * @throws IOException >>>>>>> djz
+     * @throws IOException
      */
     public synchronized Connection incomingConnection(Socket s) throws IOException {
-        log.debug("incomming connection: " + Settings.socketAddress(s));
+        log.debug("incoming connection: " + Settings.socketAddress(s));
         Connection c = new Connection(s);
         connections.add(c);
         return c;
@@ -181,11 +209,7 @@ public class Control extends Thread {
         while (!term) {
             // do something with 5 second intervals in between
             for (Connection connection : connections) {
-                JSONObject announce = new JSONObject();
-                announce.put("command", "SERVER_ANNOUNCE");
-                announce.put("id", Settings.getServerId());
-                announce.put("load", connections.size());
-                connection.writeMsg(announce.toJSONString());
+                Message.serverAnnounce(connection, connections.size());
             }
             try {
                 Thread.sleep(Settings.getActivityInterval());
