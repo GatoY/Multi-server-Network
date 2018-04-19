@@ -1,11 +1,7 @@
 /bin/
+/lib/
 /.idea
 *.classpath
 *.project
-<<<<<<< HEAD
 *.iml
-/lib/
 *.DS_Store
-=======
-*.iml
->>>>>>> d482532baebf3193d1a853a678d1ae310df69081
