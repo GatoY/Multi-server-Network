@@ -15,6 +15,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import activitystreamer.util.Settings;
 
@@ -82,17 +84,27 @@ public class ClientSkeleton extends Thread {
 
 			isr = new InputStreamReader(dis);
 			br = new BufferedReader(isr);
+			StringBuffer sb = new StringBuffer();
+			
 			while (true) {
 				msg = br.readLine();
 				if (msg == null) {
 					break;
 				}
-				System.out.println(msg);
+				sb.append(msg);
 			}
 			
+			JSONParser jp = new JSONParser();
+			JSONObject jo = new JSONObject();
+			jo = (JSONObject) jp.parse(sb.toString());
+			
+			textFrame.setOutputText(jo);
 			
 			
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 			
