@@ -16,7 +16,7 @@ import activitystreamer.util.Settings;
 
 public class Control extends Thread {
     private static final Logger log = LogManager.getLogger();
-    private static ArrayList<Connection> connections;
+    private static List<Connection> connections;
     private static boolean term = false;
     private static Listener listener;
 
@@ -69,13 +69,11 @@ public class Control extends Thread {
         try {
             request = (JSONObject) new JSONParser().parse(msg);
         } catch (Exception e) {
-            Message.invalidMsg(con, "the received message is not in valid format");
-            return true;
+            return Message.invalidMsg(con, "the received message is not in valid format");
         }
 
         if (request.get("command") == null) {
-            Message.invalidMsg(con, "the received message did not contain a command");
-            return true;
+            return Message.invalidMsg(con, "the received message did not contain a command");
         }
 
         String command = (String) request.get("command");
@@ -85,19 +83,18 @@ public class Control extends Thread {
                 return true;
             case Message.AUTHENTICATE:
                 if (request.get("secret") == null) {
-                    Message.invalidMsg(con, "the received message did not contain a secret");
+                    return Message.invalidMsg(con, "the received message did not contain a secret");
                 }
                 String secret = (String) request.get("secret");
                 if (!secret.equals(Settings.serverSecret)) {
                     // if the secret is incorrect
-                    Message.authenticationFail(con, "the supplied secret is incorrect: " + secret);
+                    return Message.authenticationFail(con, "the supplied secret is incorrect: " + secret);
                 } else if (Settings.isIsRemoteAuthenticated()) {
-                    Message.invalidMsg(con, "the server has already successfully authenticated");
-                } else {
-                    Settings.setIsRemoteAuthenticated(true);
-                    // No reply if the authentication succeeded.
+                    return Message.invalidMsg(con, "the server has already successfully authenticated");
                 }
-                break;
+                // No reply if the authentication succeeded.
+                Settings.setIsRemoteAuthenticated(true);
+                return false;
             case Message.AUTHENTICATION_FAIL:
                 return true;
             case Message.LOGIN:
@@ -242,7 +239,7 @@ public class Control extends Thread {
         term = t;
     }
 
-    public final ArrayList<Connection> getConnections() {
+    public final List<Connection> getConnections() {
         return connections;
     }
 }

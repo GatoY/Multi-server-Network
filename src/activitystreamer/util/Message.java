@@ -26,11 +26,12 @@ public class Message {
     public static final String LOCK_ALLOWED = "LOCK_ALLOWED";
 
 
-    public synchronized static void invalidMsg(Connection con, String info) {
+    public synchronized static boolean invalidMsg(Connection con, String info) {
         JSONObject json = new JSONObject();
         json.put("command", Message.INVALID_MESSAGE);
         json.put("info", info);
         con.writeMsg(json.toJSONString());
+        return true;
     }
 
     public synchronized static void authenticate(Connection con) {
