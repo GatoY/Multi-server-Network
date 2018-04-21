@@ -174,6 +174,7 @@ public class Control extends Thread {
 		while (!term) {
 			// do something with 5 second intervals in between
 			for (Connection connection : connections) {
+				if(connection.getSocket())
 				JSONObject announce = new JSONObject();
 				announce.put("command", "SERVER_ANNOUNCE");
 				announce.put("id", Settings.getServerId());
