@@ -7,6 +7,8 @@ import java.security.SecureRandom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random; //ms
 
 public class Settings {
@@ -17,21 +19,23 @@ public class Settings {
     private static String remoteHostname = null;
     private static int remotePort = 3780;
     private static int activityInterval = 5000; // milliseconds
-    private static String secret = null;
+    private static String userSecret = null;
     private static String username = "anonymous";
     // -yu, server id.
     private static String serverId;
     // -ms, serverIdLength
     private static int serverIdLength = 26;
-    private static boolean isRemoteAuthenticated = false;
+    private static boolean remoteAuthenticated = false;
     public static final String serverSecret = "gen1p85md2qnq0d59qll3fbcoa";
+
+    private static List<User> clientList = new ArrayList<>();
 
     // -ms set server id.
     public static void setServerId() {
         String range = "0123456789abcdefghijklmnopqrstuvwxyz";
         Random rd = new Random();
         StringBuilder randomId = new StringBuilder();
-        //randomId.length = 26
+        // randomId.length = 26
         for (int i = 0; i < serverIdLength; i++) {
             randomId.append(range.charAt(rd.nextInt(range.length())));
         }
@@ -84,12 +88,12 @@ public class Settings {
         Settings.activityInterval = activityInterval;
     }
 
-    public static String getSecret() {
-        return secret;
+    public static String getUserSecret() {
+        return userSecret;
     }
 
-    public static void setSecret(String s) {
-        secret = s;
+    public static void setUserSecret(String s) {
+        userSecret = s;
     }
 
     public static String getUsername() {
@@ -120,11 +124,19 @@ public class Settings {
         return new BigInteger(130, random).toString(32);
     }
 
-    public static boolean isIsRemoteAuthenticated() {
-        return isRemoteAuthenticated;
+    public static boolean isRemoteAuthenticated() {
+        return remoteAuthenticated;
     }
 
-    public static void setIsRemoteAuthenticated(boolean isRemoteAuthenticated) {
-        Settings.isRemoteAuthenticated = isRemoteAuthenticated;
+    public static void setRemoteAuthenticated(boolean remoteAuthenticated) {
+        Settings.remoteAuthenticated = remoteAuthenticated;
+    }
+
+    public static List<User> getClientList() {
+        return clientList;
+    }
+
+    public static void setClientList(List<User> clientList) {
+        Settings.clientList = clientList;
     }
 }

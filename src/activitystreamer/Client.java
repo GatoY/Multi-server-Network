@@ -59,7 +59,7 @@ public class Client {
         }
 
         if (cmd.hasOption("s")) {
-            Settings.setSecret(cmd.getOptionValue("s"));
+            Settings.setUserSecret(cmd.getOptionValue("s"));
         }
 
         if (cmd.hasOption("u")) {
@@ -68,7 +68,7 @@ public class Client {
 
         log.info("starting client");
 
-        ClientSkeleton c = ClientSkeleton.getInstance();
+        ClientSkeleton client = ClientSkeleton.getInstance();
 
     }
 

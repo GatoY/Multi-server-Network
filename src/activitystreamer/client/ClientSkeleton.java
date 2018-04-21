@@ -37,7 +37,6 @@ public class ClientSkeleton extends Thread {
         start();
     }
 
-
     @SuppressWarnings("unchecked")
     public void sendActivityObject(JSONObject activityObj) {
         try {

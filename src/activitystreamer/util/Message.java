@@ -4,7 +4,6 @@ import activitystreamer.server.Connection;
 import org.json.simple.JSONObject;
 
 import java.net.Socket;
-import java.util.Set;
 
 public class Message {
     public static final String AUTHENTICATE = "AUTHENTICATE";
@@ -37,7 +36,7 @@ public class Message {
     public synchronized static void authenticate(Connection con) {
         JSONObject json = new JSONObject();
         json.put("command", Message.AUTHENTICATE);
-        json.put("secret", Settings.getSecret());
+        json.put("secret", Settings.serverSecret);
         con.writeMsg(json.toJSONString());
     }
 
@@ -57,6 +56,47 @@ public class Message {
         json.put("hostname", Settings.getLocalHostname());
         json.put("port", Settings.getLocalPort());
         con.writeMsg(json.toJSONString());
+    }
+
+    public synchronized static boolean registerFailed(Connection con, String info) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.REGISTER_FAILED);
+        json.put("info", info);
+        con.writeMsg(json.toJSONString());
+        return true;
+    }
+
+    public synchronized static boolean register(Connection con, String info) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.REGISTER_SUCCESS);
+        json.put("info", info);
+        con.writeMsg(json.toJSONString());
+        return false;
+    }
+
+    public synchronized static boolean loginSuccess(Connection con, String info) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOGIN_SUCCESS);
+        json.put("info", info);
+        con.writeMsg(json.toJSONString());
+        return false;
+    }
+
+
+    public synchronized static boolean loginFailed(Connection con, String info) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOGIN_FAILED);
+        json.put("info", info);
+        con.writeMsg(json.toJSONString());
+        return false;
+    }
+
+    public synchronized static boolean logout(Connection con) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOGOUT);
+        con.writeMsg(json.toJSONString());
+        return true;
+
     }
 
     public synchronized static void redirect(Connection con) {
