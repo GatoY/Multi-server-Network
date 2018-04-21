@@ -64,9 +64,7 @@ public class Control extends Thread {
     public synchronized boolean process(Connection con, String msg) {
         JSONObject request;
         try {
-        		System.out.println(msg);//{"command":"AUTHENTICATE"}
             request = (JSONObject) new JSONParser().parse(msg);
-            System.out.println(request);
         } catch (Exception e) {
             Message.invalidMsg(con, "the received message is not in valid format");
             return true;
