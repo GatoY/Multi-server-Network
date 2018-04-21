@@ -15,19 +15,19 @@ import activitystreamer.util.Settings;
 
 public class Connection extends Thread {
     private static final Logger log = LogManager.getLogger();
-    private DataInputStream in;
-    private DataOutputStream out;
-    private BufferedReader inreader;
-    private PrintWriter outwriter;
+    private DataInputStream dis;
+    private DataOutputStream dos;
+    private BufferedReader br;
+    private PrintWriter pw;
     private boolean open = false;
     private Socket socket;
     private boolean term = false;
 
     Connection(Socket socket) throws IOException {
-        in = new DataInputStream(socket.getInputStream());
-        out = new DataOutputStream(socket.getOutputStream());
-        inreader = new BufferedReader(new InputStreamReader(in));
-        outwriter = new PrintWriter(out, true);
+        dis = new DataInputStream(socket.getInputStream());
+        dos = new DataOutputStream(socket.getOutputStream());
+        br = new BufferedReader(new InputStreamReader(dis));
+        pw = new PrintWriter(dos, true);
         this.socket = socket;
         open = true;
         start();
@@ -38,8 +38,8 @@ public class Connection extends Thread {
      */
     public boolean writeMsg(String msg) {
         if (open) {
-            outwriter.println(msg);
-            outwriter.flush();
+            pw.println(msg);
+            pw.flush();
             return true;
         }
         return false;
@@ -50,8 +50,8 @@ public class Connection extends Thread {
             log.info("closing connection " + Settings.socketAddress(socket));
             try {
                 term = true;
-                inreader.close();
-                out.close();
+                br.close();
+                dos.close();
             } catch (IOException e) {
                 // already closed?
                 log.error("received exception closing the connection " + Settings.socketAddress(socket) + ": " + e);
@@ -62,12 +62,12 @@ public class Connection extends Thread {
     public void run() {
         try {
             String data;
-            while (!term && (data = inreader.readLine()) != null) {
+            while (!term && (data = br.readLine()) != null) {
                 term = Control.getInstance().process(this, data);
             }
             log.debug("connection closed to " + Settings.socketAddress(socket));
             Control.getInstance().connectionClosed(this);
-            in.close();
+            dis.close();
         } catch (IOException e) {
             log.error("connection " + Settings.socketAddress(socket) + " closed with exception: " + e);
             Control.getInstance().connectionClosed(this);

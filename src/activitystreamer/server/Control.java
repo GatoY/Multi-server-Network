@@ -3,6 +3,7 @@ package activitystreamer.server;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
 
 import activitystreamer.util.Message;
 import org.apache.logging.log4j.LogManager;
@@ -44,7 +45,9 @@ public class Control extends Thread {
         // make a connection to another server if remote hostname is supplied
         if (Settings.getRemoteHostname() != null) {
             try {
-                outgoingConnection(new Socket(Settings.getRemoteHostname(), Settings.getRemotePort()));
+                Connection c = outgoingConnection(new Socket(Settings.getRemoteHostname(), Settings.getRemotePort()));
+                Message.authenticate(c);
+
             } catch (IOException e) {
                 log.error("failed to make connection to " + Settings.getRemoteHostname() + ":"
                         + Settings.getRemotePort() + " :" + e);
@@ -58,7 +61,7 @@ public class Control extends Thread {
      * Processing incoming messages from the connection. Return true if the connection should close.
      *
      * @param con
-     * @param msg
+     * @param msg result JSON string
      * @return
      */
     public synchronized boolean process(Connection con, String msg) {
@@ -77,63 +80,55 @@ public class Control extends Thread {
 
         String command = (String) request.get("command");
 
-        if (command.equals(Message.INVALID_MESSAGE)) {
-            return true;
-        } else if (command.equals(Message.AUTHENTICATION_FAIL)) {
-            return true;
-        } else if (command.equals(Message.LOGIN)) {
-            return !login(con, request);
-        } else if (command.equals(Message.LOGOUT)) {
-            return true;
-        } else if (command.equals(Message.ACTIVITY_MESSAGE)) {
-            if (request.containsKey("username")) {
+        switch (command) {
+            case Message.INVALID_MESSAGE:
+                return true;
+            case Message.AUTHENTICATE:
+                if (request.get("secret") == null) {
+                    Message.invalidMsg(con, "the received message did not contain a secret");
+                }
+                String secret = (String) request.get("secret");
+                if (!secret.equals(Settings.serverSecret)) {
+                    // if the secret is incorrect
+                    Message.authenticationFail(con, "the supplied secret is incorrect: " + secret);
+                } else if (Settings.isIsRemoteAuthenticated()) {
+                    Message.invalidMsg(con, "the server has already successfully authenticated");
+                } else {
+                    Settings.setIsRemoteAuthenticated(true);
+                    // No reply if the authentication succeeded.
+                }
+                break;
+            case Message.AUTHENTICATION_FAIL:
+                return true;
+            case Message.LOGIN:
+                return !login(con, request);
+            case Message.LOGOUT:
+                return true;
+            case Message.ACTIVITY_MESSAGE:
+                if (!request.containsKey("username")) {
+                    return Message.authenticationFail(con, "the message did not contain a username");
+                }
+                if (!request.containsKey("secret")) {
+                    return Message.authenticationFail(con, "the message did not contain a secret");
+                }
                 String activityUsername = (String) request.get("username");
+                String activityPassword = (String) request.get("secret");
                 if (activityUsername.equals("anonymous")) {
                     if (activityUsername.equals(Settings.getUsername())) {
-                        broadcast();
-                        return false;
+                        return broadcastActivity(this.getConnections(), (JSONObject) request.get("activity"));
                     }
                 } else {
-                    // no password.
-                    if (!request.containsKey("password")) {
-                        Message.authenticationFail(con, "");
-                        return true;
-                    }
-                    String activityPassword = (String) request.get("password");
                     if (!activityUsername.equals(Settings.getUsername())
                             || !activityPassword.equals(Settings.getSecret())) {
-                        Message.authenticationFail(con, "the supplied secret is incorrect: " + activityPassword);
-                        return true;
+                        return Message.authenticationFail(con, "the supplied secret is incorrect: " + activityPassword);
                     }
-                    broadcast();
-                    return false;
+                    return broadcastActivity(this.getConnections(), (JSONObject) request.get("activity"));
                 }
-            } else {
-                Message.authenticationFail(con, "the message did not contain a username"); //TODO
                 return true;
-            }
-        } else if (command.equals(Message.AUTHENTICATE)) {
-            if (request.get("secret") == null) {
-                Message.invalidMsg(con, "the received message did not contain a secret");
-            }
-            String secret = (String) request.get("secret");
-            if (!secret.equals(Settings.serverSecret)) {
-                // if the secret is incorrect
-                Message.authenticationFail(con, "the supplied secret is incorrect: " + secret);
-            } else if (Settings.isIsRemoteAuthenticated()) {
-                Message.invalidMsg(con, "the server has already successfully authenticated");
-            } else {
-                Settings.setIsRemoteAuthenticated(true);
-                // No reply if the authentication succeeded.
-            }
         }
         return true;
     }
 
-
-    public synchronized void broadcast() {
-        return;
-    }
 
     public synchronized boolean login(Connection con, JSONObject request) {
         JSONObject response = new JSONObject();
@@ -160,6 +155,13 @@ public class Control extends Thread {
 
     public boolean validate(String username, String password) {
         return true;
+    }
+
+    private boolean broadcastActivity(List<Connection> connections, JSONObject activity) {
+        for (Connection c : connections) {
+            Message.activityBroadcast(c, activity);
+        }
+        return false;
     }
 
     /**

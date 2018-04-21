@@ -3,6 +3,9 @@ package activitystreamer.util;
 import activitystreamer.server.Connection;
 import org.json.simple.JSONObject;
 
+import java.net.Socket;
+import java.util.Set;
+
 public class Message {
     public static final String AUTHENTICATE = "AUTHENTICATE";
     public static final String INVALID_MESSAGE = "INVALID_MESSAGE";
@@ -30,21 +33,46 @@ public class Message {
         con.writeMsg(json.toJSONString());
     }
 
-    public synchronized static void authenticationFail(Connection con, String info) {
+    public synchronized static void authenticate(Connection con) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.AUTHENTICATE);
+        json.put("secret", Settings.getSecret());
+        con.writeMsg(json.toJSONString());
+    }
+
+    public synchronized static boolean authenticationFail(Connection con, String info) {
         JSONObject json = new JSONObject();
         json.put("command", Message.AUTHENTICATION_FAIL);
         json.put("info", info);
         con.writeMsg(json.toJSONString());
+        return true;
     }
 
-    public static void serverAnnounce(Connection connection, int load) {
+    public synchronized static void serverAnnounce(Connection con, int load) {
         JSONObject json = new JSONObject();
         json.put("command", Message.SERVER_ANNOUNCE);
         json.put("id", Settings.getServerId());
         json.put("load", load);
         json.put("hostname", Settings.getLocalHostname());
         json.put("port", Settings.getLocalPort());
-        connection.writeMsg(json.toJSONString());
+        con.writeMsg(json.toJSONString());
     }
+
+    public synchronized static void redirect(Connection con) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.REDIRECT);
+        json.put("hostname", Settings.getRemoteHostname());
+        json.put("port", Settings.getRemotePort());
+        con.writeMsg(json.toJSONString());
+    }
+
+    public synchronized static boolean activityBroadcast(Connection con, JSONObject activity) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.ACTIVITY_BROADCAST);
+        json.put("activity", activity);
+        con.writeMsg(json.toJSONString());
+        return false;
+    }
+
 
 }
