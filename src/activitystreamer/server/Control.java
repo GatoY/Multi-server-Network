@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;
 
 import activitystreamer.util.Settings;
 
@@ -63,7 +64,9 @@ public class Control extends Thread {
     public synchronized boolean process(Connection con, String msg) {
         JSONObject request;
         try {
-            request = (JSONObject) JSONValue.parse(msg);
+        		System.out.println(msg);//{"command":"AUTHENTICATE"}
+            request = (JSONObject) new JSONParser().parse(msg);
+            System.out.println(request);
         } catch (Exception e) {
             Message.invalidMsg(con, "the received message is not in valid format");
             return true;
