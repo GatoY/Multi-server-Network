@@ -134,8 +134,6 @@ public class ClientSkeleton extends Thread {
             out = new PrintWriter(dos, true);
             isr = new InputStreamReader(socket.getInputStream());
             br = new BufferedReader(isr);
-//            textFrame.dispose();
-            textFrame = new TextFrame();
             initMsg();
 
         } catch (IOException e) {
