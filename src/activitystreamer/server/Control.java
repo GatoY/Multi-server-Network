@@ -158,14 +158,6 @@ public class Control extends Thread {
         } else {
             return Message.lockRequest(con, username, secret);
         }
-//        else {
-//            User user = new User(username, secret);
-//            user.setHostname(con.getSocket().getInetAddress().toString()); //TODO review
-//            user.setPort(con.getSocket().getPort()); // TODO review
-//            user.setLogin(false);
-//            clientList.add(user);
-//            return Message.registerSuccess(con, "register success for " + username); // false
-//        }
     }
 
     private void addUser(Connection con, String username, String secret) {
@@ -174,7 +166,6 @@ public class Control extends Thread {
         user.setPort(con.getSocket().getPort()); // TODO review
         user.setLogin(false);
         clientList.add(user);
-//        return Message.registerSuccess(con, "register success for " + username); // false
     }
 
     private boolean isUserRegisteredLocally() {
