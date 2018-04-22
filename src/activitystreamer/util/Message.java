@@ -4,7 +4,6 @@ import activitystreamer.server.Connection;
 import org.json.simple.JSONObject;
 
 import java.net.Socket;
-import java.util.Set;
 
 public class Message {
     public static final String AUTHENTICATE = "AUTHENTICATE";
@@ -26,17 +25,19 @@ public class Message {
     public static final String LOCK_ALLOWED = "LOCK_ALLOWED";
 
 
-    public synchronized static void invalidMsg(Connection con, String info) {
+    public synchronized static boolean invalidMsg(Connection con, String info) {
         JSONObject json = new JSONObject();
         json.put("command", Message.INVALID_MESSAGE);
         json.put("info", info);
         con.writeMsg(json.toJSONString());
+        con.closeCon();
+        return true;
     }
 
     public synchronized static void authenticate(Connection con) {
         JSONObject json = new JSONObject();
         json.put("command", Message.AUTHENTICATE);
-        json.put("secret", Settings.getSecret());
+        json.put("secret", Settings.serverSecret);
         con.writeMsg(json.toJSONString());
     }
 
@@ -45,6 +46,7 @@ public class Message {
         json.put("command", Message.AUTHENTICATION_FAIL);
         json.put("info", info);
         con.writeMsg(json.toJSONString());
+        con.closeCon();
         return true;
     }
 
@@ -58,11 +60,100 @@ public class Message {
         con.writeMsg(json.toJSONString());
     }
 
+    public synchronized static boolean lockRequest(Connection con, String username, String secret) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOCK_REQUEST);
+        json.put("username", username);
+        json.put("secret", secret);
+        con.writeMsg(json.toJSONString());
+        return false;
+    }
+
+    public synchronized static boolean registerFailed(Connection con, String info) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.REGISTER_FAILED);
+        json.put("info", info);
+        con.writeMsg(json.toJSONString());
+        return true;
+    }
+
+    public synchronized static boolean registerSuccess(Connection con, String info) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.REGISTER_SUCCESS);
+        json.put("info", info);
+        con.writeMsg(json.toJSONString());
+        return false;
+    }
+
+    /**
+     * Client register
+     *
+     * @param userName
+     * @param secret
+     * @return
+     */
+    public synchronized static String register(String userName, String secret) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.REGISTER);
+        json.put("username", userName);
+        json.put("secret", secret);
+        return json.toJSONString();
+    }
+
+    /**
+     * Client anonymous login
+     *
+     * @return
+     */
+    public synchronized static String login() {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOGIN);
+        json.put("username", Settings.getUsername());
+        return json.toJSONString();
+    }
+
+    /**
+     * Client normal login
+     *
+     * @param userName
+     * @return
+     */
+    public synchronized static String login(String userName) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOGIN);
+        json.put("username", userName);
+        json.put("secret", Settings.getUserSecret());
+        return json.toJSONString();
+    }
+
+    public synchronized static boolean loginSuccess(Connection con, String info) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOGIN_SUCCESS);
+        json.put("info", info);
+        con.writeMsg(json.toJSONString());
+        return false;
+    }
+
+    public synchronized static boolean loginFailed(Connection con, String info) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOGIN_FAILED);
+        json.put("info", info);
+        con.writeMsg(json.toJSONString());
+        return false;
+    }
+
+    public synchronized static boolean logout(Connection con) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOGOUT);
+        con.writeMsg(json.toJSONString());
+        return true;
+    }
+
     public synchronized static void redirect(Connection con) {
         JSONObject json = new JSONObject();
         json.put("command", Message.REDIRECT);
-        json.put("hostname", Settings.getRemoteHostname());
-        json.put("port", Settings.getRemotePort());
+        json.put("hostname", con.getSocket().getInetAddress());
+        json.put("port", con.getSocket().getPort());
         con.writeMsg(json.toJSONString());
     }
 
@@ -73,6 +164,5 @@ public class Message {
         con.writeMsg(json.toJSONString());
         return false;
     }
-
 
 }

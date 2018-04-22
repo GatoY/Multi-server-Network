@@ -10,121 +10,128 @@ import org.apache.logging.log4j.Logger;
 import java.util.Random; //ms
 
 public class Settings {
-	private static final Logger log = LogManager.getLogger();
-	private static SecureRandom random = new SecureRandom();
-	private static int localPort = 3780;
-	private static String localHostname = "localhost";
-	private static String remoteHostname = null;
-	private static int remotePort = 3780;
-	private static int activityInterval = 5000; // milliseconds
-	private static String secret = null;
-	private static String username = "anonymous";
-	// -yu, server id.
-	private static String serverId;
-	// -ms, serverIdLength
-	private static int serverIdLength = 26;
-	private static boolean isRemoteAuthenticated = false;
-	public static final String serverSecret = "gen1p85md2qnq0d59qll3fbcoa";
+    private static final Logger log = LogManager.getLogger();
+    private static SecureRandom random = new SecureRandom();
+    private static int localPort = 3780;
+    private static String localHostname = "localhost";
+    private static String remoteHostname = null;
+    private static int remotePort = 3780;
+    private static int activityInterval = 5000; // milliseconds
+    // -yu, server id.
+    private static String serverId;
+    // -ms, serverIdLength
+    private static int serverIdLength = 26;
+    private static boolean remoteAuthenticated = false;
+    public static final String serverSecret = "gen1p85md2qnq0d59qll3fbcoa";
 
-	// -ms set server id.
-	public static void setServerId() {
-		String range = "0123456789abcdefghijklmnopqrstuvwxyz";
-		Random rd = new Random();
-		StringBuilder randomId = new StringBuilder();
-		// randomId.length = 26
-		for (int i = 0; i < serverIdLength; i++) {
-			randomId.append(range.charAt(rd.nextInt(range.length())));
-		}
-		serverId = randomId.toString();
-		return;
-	}
+    //for client
+    private static String userSecret = null;
+    private static String username = "anonymous";
 
-	// -yu get server id.
-	public static String getServerId() {
-		return serverId;
-	}
+    // -ms set server id.
+    public static void setServerId() {
+        serverId = genRandomString();
+    }
 
-	public static int getLocalPort() {
-		return localPort;
-	}
+    // -lun generate random String -- made by Mason
+    public static String genRandomString() {
+        String range = "0123456789abcdefghijklmnopqrstuvwxyz";
+        Random rd = new Random();
+        StringBuffer randomId = new StringBuffer();
+        //randomId.length = 26
+        for (int i = 0; i < serverIdLength; i++) {
+            randomId.append(range.charAt(rd.nextInt(range.length())));
+        }
+        return randomId.toString();
+    }
 
-	public static void setLocalPort(int localPort) {
-		if (localPort < 0 || localPort > 65535) {
-			log.error("supplied port " + localPort + " is out of range, using " + getLocalPort());
-		} else {
-			Settings.localPort = localPort;
-		}
-	}
+    // -yu get server id.
+    public static String getServerId() {
+        return serverId;
+    }
 
-	public static int getRemotePort() {
-		return remotePort;
-	}
+    public static int getLocalPort() {
+        return localPort;
+    }
 
-	public static void setRemotePort(int remotePort) {
-		if (remotePort < 0 || remotePort > 65535) {
-			log.error("supplied port " + remotePort + " is out of range, using " + getRemotePort());
-		} else {
-			Settings.remotePort = remotePort;
-		}
-	}
+    public static void setLocalPort(int localPort) {
+        if (localPort < 0 || localPort > 65535) {
+            log.error("supplied port " + localPort + " is out of range, using " + getLocalPort());
+        } else {
+            Settings.localPort = localPort;
+        }
+    }
 
-	public static String getRemoteHostname() {
-		return remoteHostname;
-	}
+    public static int getRemotePort() {
+        return remotePort;
+    }
 
-	public static void setRemoteHostname(String remoteHostname) {
-		Settings.remoteHostname = remoteHostname;
-	}
+    public static void setRemotePort(int remotePort) {
+        if (remotePort < 0 || remotePort > 65535) {
+            log.error("supplied port " + remotePort + " is out of range, using " + getRemotePort());
+        } else {
+            Settings.remotePort = remotePort;
+        }
+    }
 
-	public static int getActivityInterval() {
-		return activityInterval;
-	}
+    public static String getRemoteHostname() {
+        return remoteHostname;
+    }
 
-	public static void setActivityInterval(int activityInterval) {
-		Settings.activityInterval = activityInterval;
-	}
+    public static void setRemoteHostname(String remoteHostname) {
+        Settings.remoteHostname = remoteHostname;
+    }
 
-	public static String getSecret() {
-		return secret;
-	}
+    public static int getActivityInterval() {
+        return activityInterval;
+    }
 
-	public static void setSecret(String s) {
-		secret = s;
-	}
+    public static void setActivityInterval(int activityInterval) {
+        Settings.activityInterval = activityInterval;
+    }
 
-	public static String getUsername() {
-		return username;
-	}
+    public static String getUserSecret() {
+        return userSecret;
+    }
 
-	public static void setUsername(String username) {
-		Settings.username = username;
-	}
+    public static void setUserSecret(String s) {
+        userSecret = s;
+    }
 
-	public static String getLocalHostname() {
-		return localHostname;
-	}
+    public static String getUsername() {
+        return username;
+    }
 
-	public static void setLocalHostname(String localHostname) {
-		Settings.localHostname = localHostname;
-	}
+    public static void setUsername(String username) {
+        Settings.username = username;
+    }
 
-	/*
-	 * some general helper functions
-	 */
+    public static String getLocalHostname() {
+        return localHostname;
+    }
 
-	public static String socketAddress(Socket socket) {
-		return socket.getInetAddress() + ":" + socket.getPort();
-	}
+    public static void setLocalHostname(String localHostname) {
+        Settings.localHostname = localHostname;
+    }
 
-	public static String nextSecret() {
-		return new BigInteger(130, random).toString(32);
-	}
+    /*
+     * some general helper functions
+     */
 
-	public static boolean isIsRemoteAuthenticated() {
-		return isRemoteAuthenticated;
-	}
+    public static String socketAddress(Socket socket) {
+        return socket.getInetAddress() + ":" + socket.getPort();
+    }
 
-	public static void setIsRemoteAuthenticated(boolean isRemoteAuthenticated) {
-		Settings.isRemoteAuthenticated = isRemoteAuthenticated;
-	}
+    public static String nextSecret() {
+        return new BigInteger(130, random).toString(32);
+    }
+
+    public static boolean isRemoteAuthenticated() {
+        return remoteAuthenticated;
+    }
+
+    public static void setRemoteAuthenticated(boolean remoteAuthenticated) {
+        Settings.remoteAuthenticated = remoteAuthenticated;
+    }
+
 }

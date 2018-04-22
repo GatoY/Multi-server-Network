@@ -93,7 +93,7 @@ public class Server {
         }
 
         if (cmd.hasOption("s")) {
-            Settings.setSecret(cmd.getOptionValue("s"));
+            Settings.setUserSecret(cmd.getOptionValue("s"));
         }
         // yu- set server id.
         Settings.setServerId();
@@ -101,6 +101,7 @@ public class Server {
         log.info("starting server");
 
         final Control c = Control.getInstance();
+
         c.initiateConnection();
         // the following shutdown hook doesn't really work, it doesn't give us enough
         // time to
