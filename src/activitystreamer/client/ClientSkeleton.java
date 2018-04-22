@@ -106,7 +106,8 @@ public class ClientSkeleton extends Thread {
     }
 
 
-    private JSONObject process(String msg) throws ParseException, IOException {
+    
+	private JSONObject process(String msg) throws ParseException, IOException {
         JSONObject jo = (JSONObject) jp.parse(msg);
         textFrame.setOutputText(jo);
         String cmd = (String) jo.get("command");
@@ -134,8 +135,6 @@ public class ClientSkeleton extends Thread {
             out = new PrintWriter(dos, true);
             isr = new InputStreamReader(socket.getInputStream());
             br = new BufferedReader(isr);
-//            textFrame.dispose();
-            textFrame = new TextFrame();
             initMsg();
 
         } catch (IOException e) {
