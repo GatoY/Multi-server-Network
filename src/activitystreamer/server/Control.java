@@ -2,8 +2,7 @@ package activitystreamer.server;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import activitystreamer.util.Message;
 import activitystreamer.util.User;
@@ -21,7 +20,10 @@ public class Control extends Thread {
     private static Listener listener;
 
     protected static Control control = null;
-    private static Connection parentServer, lChildServer, rChildServer;
+    private static Connection parentConnection, lChildConnection, rChildConnection;
+    private static Map<Connection, Integer> loadMap = new HashMap<>();
+    private static List<User> clientList = new ArrayList<>(); // the registered users on THIS server
+
 
     public static Control getInstance() {
         if (control == null) {
@@ -47,9 +49,6 @@ public class Control extends Thread {
         if (Settings.getRemoteHostname() != null) {
             try {
                 Connection c = outgoingConnection(new Socket(Settings.getRemoteHostname(), Settings.getRemotePort()));
-
-                Message.authenticate(c);
-
             } catch (IOException e) {
                 log.error("failed to make connection to " + Settings.getRemoteHostname() + ":"
                         + Settings.getRemotePort() + " :" + e);
@@ -84,58 +83,66 @@ public class Control extends Thread {
             case Message.INVALID_MESSAGE:
                 return true;
             case Message.AUTHENTICATE:
-                if (request.get("secret") == null) {
-                    return Message.invalidMsg(con, "the received message did not contain a secret");
-                }
-                String secret = (String) request.get("secret");
-                if (!secret.equals(Settings.serverSecret)) {
-                    // if the secret is incorrect
-                    return Message.authenticationFail(con, "the supplied secret is incorrect: " + secret);
-                } else if (Settings.isRemoteAuthenticated()) {
-                    return Message.invalidMsg(con, "the server has already successfully authenticated");
-                }
-                // No reply if the authentication succeeded.
-                Settings.setRemoteAuthenticated(true);
-
-//TODO
-//                if (lChildServer == null) {
-//                    lChildServer = con;
-//                } else if (rChildServer == null) {
-//                    rChildServer = con;
-//                }
-
-
-                return false;
+                return authenticateIncomingConnection(con, request);
             case Message.AUTHENTICATION_FAIL:
-                return true;
+                return authenticationFail();
             case Message.REGISTER:
                 return register(con, request);
+            case Message.LOCK_REQUEST:
+                // TODO Check the if the user has registered locally. If not, relay the LOCK_REQUEST to other servers
+            case Message.LOCK_DENIED:
+                // TODO intermediate nodes ??
+
+                // end node
+                return Message.registerFailed(con, request.get("username") + " is already registered with the system");
+            case Message.LOCK_ALLOWED:
+                // TODO intermediate nodes ??
+
+                // end node
+                addUser(con, (String) request.get("username"), (String) request.get("secret"));
+                return Message.registerSuccess(con, "register success for " + request.get("username"));
             case Message.LOGIN:
                 return login(con, request);
             case Message.LOGOUT:
-                logout(con);
-                return true;
+                return logout(con);
             case Message.ACTIVITY_MESSAGE:
-                if (!request.containsKey("username")) {
-                    return Message.authenticationFail(con, "the message did not contain a username");
-                }
-                if (!request.containsKey("secret")) {
-                    return Message.authenticationFail(con, "the message did not contain a secret");
-                }
-                String activityUsername = (String) request.get("username");
-                String activityPassword = (String) request.get("secret");
-                if (activityUsername.equals("anonymous")) {
-                    if (activityUsername.equals(Settings.getUsername())) {
-                        return broadcastActivity(con, (JSONObject) request.get("activity"));
-                    }
-                } else {
-                    if (!activityUsername.equals(Settings.getUsername())
-                            || !activityPassword.equals(Settings.getUserSecret())) {
-                        return Message.authenticationFail(con, "the supplied secret is incorrect: " + activityPassword);
-                    }
-                    return broadcastActivity(con, (JSONObject) request.get("activity"));
-                }
-                return true;
+                return onReceiveActivityMessage(con, request);
+            case Message.SERVER_ANNOUNCE:
+                onReceiveServerAnnounce(con, request);
+        }
+        return true;
+    }
+
+    private synchronized boolean authenticateIncomingConnection(Connection con, JSONObject request) {
+        if (request.get("secret") == null) {
+            return Message.invalidMsg(con, "the received message did not contain a secret");
+        }
+        String secret = (String) request.get("secret");
+        if (!secret.equals(Settings.serverSecret)) {
+            // if the secret is incorrect
+            return Message.authenticationFail(con, "the supplied secret is incorrect: " + secret);
+        } else if (lChildConnection == con || rChildConnection == con) {
+            return Message.invalidMsg(con, "the server has already successfully authenticated");
+        }
+        // No reply if the authentication succeeded.
+        if (lChildConnection == null) {
+            lChildConnection = con;
+        } else if (rChildConnection == null) {
+            rChildConnection = con;
+        }
+        // if from server, remove it from the client connections TODO
+        for (Connection c : clientConnections) {
+            if (c.getSocket() == con.getSocket()) {
+                clientConnections.remove(c);
+            }
+        }
+        return false;
+    }
+
+    private synchronized boolean authenticationFail() {
+        if (parentConnection != null && parentConnection.isOpen()) {
+            parentConnection.closeCon();
+            parentConnection = null;
         }
         return true;
     }
@@ -146,21 +153,62 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        if (!isUserRegistered()) {
+        if (!isUserRegisteredLocally()) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
         } else {
-            User user = new User(username, secret);
-            user.setHostname(con.getSocket().getLocalAddress().toString()); //TODO check???
-            user.setPort(con.getSocket().getLocalPort()); // TODO check getLocalPort getPort
-            user.setLogin(false);
-            Settings.getClientList().add(user);
-            return Message.registerSuccess(con, "register success for " + username); // false
+            return Message.lockRequest(con, username, secret);
         }
+//        else {
+//            User user = new User(username, secret);
+//            user.setHostname(con.getSocket().getInetAddress().toString()); //TODO review
+//            user.setPort(con.getSocket().getPort()); // TODO review
+//            user.setLogin(false);
+//            clientList.add(user);
+//            return Message.registerSuccess(con, "register success for " + username); // false
+//        }
     }
 
-    private boolean isUserRegistered() {
+    private void addUser(Connection con, String username, String secret) {
+        User user = new User(username, secret);
+        user.setHostname(con.getSocket().getInetAddress().toString()); //TODO review
+        user.setPort(con.getSocket().getPort()); // TODO review
+        user.setLogin(false);
+        clientList.add(user);
+//        return Message.registerSuccess(con, "register success for " + username); // false
+    }
+
+    private boolean isUserRegisteredLocally() {
         //TODO determine whether the user has registered before
         return false;
+    }
+
+    private boolean isUserRegisteredRemotely(Connection con, String username, String secret) {
+        return false;
+    }
+
+    private void onReceiveServerAnnounce(Connection con, JSONObject request) {
+        loadMap.put(con, (Integer) request.get("load"));
+        if (con != parentConnection) {
+            parentConnection.writeMsg(request.toJSONString());
+        }
+        if (con != lChildConnection) {
+            lChildConnection.writeMsg(request.toJSONString());
+        }
+        if (con != rChildConnection) {
+            rChildConnection.writeMsg(request.toJSONString());
+        }
+
+    }
+
+    private Connection checkOtherLoads() {
+        Iterator<Map.Entry<Connection, Integer>> it = loadMap.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Connection, Integer> entry = it.next();
+            if (clientConnections.size() - entry.getValue() >= 2) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     private synchronized boolean login(Connection con, JSONObject request) {
@@ -170,11 +218,14 @@ public class Control extends Thread {
 
             boolean foundUser = false;
 
-            for (User user : Settings.getClientList()) {
+            for (User user : clientList) {
                 if (user.getUserName().equals(username)) {
                     foundUser = true;
                     if (user.getPassword().equals(secret)) {
                         user.setLogin(true);
+                        if (checkOtherLoads() != null) {
+                            Message.redirect(Objects.requireNonNull(checkOtherLoads())); // TODO review
+                        }
                         return Message.loginSuccess(con, "logged in as user " + username);
                     }
                 }
@@ -188,28 +239,51 @@ public class Control extends Thread {
         return false;
     }
 
-    private void logout(Connection con) {
-        for (User user : Settings.getClientList()) {
+    private synchronized boolean logout(Connection con) {
+        for (User user : clientList) {
             if (user.getHostname().equals(con.getSocket().getLocalAddress().toString()) && user.getPort() == con.getSocket().getLocalPort()) {
                 user.setLogin(false);
             }
         }
+        return true;
     }
 
+    private synchronized boolean onReceiveActivityMessage(Connection con, JSONObject request) {
+        if (!request.containsKey("username")) {
+            return Message.authenticationFail(con, "the message did not contain a username");
+        }
+        if (!request.containsKey("secret")) {
+            return Message.authenticationFail(con, "the message did not contain a secret");
+        }
+        String activityUsername = (String) request.get("username");
+        String activityPassword = (String) request.get("secret");
+        if (activityUsername.equals("anonymous")) {
+            if (activityUsername.equals(Settings.getUsername())) {
+                return broadcastActivity(con, (JSONObject) request.get("activity"));
+            }
+        } else {
+            if (!activityUsername.equals(Settings.getUsername())
+                    || !activityPassword.equals(Settings.getUserSecret())) {
+                return Message.authenticationFail(con, "the supplied secret is incorrect: " + activityPassword);
+            }
+            return broadcastActivity(con, (JSONObject) request.get("activity"));
+        }
+        return true;
+    }
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
         for (Connection c : this.getClientConnections()) {
             Message.activityBroadcast(c, activity);
         }
-        // broadcast activity to other servers except which it comes from
-        if (parentServer != sourceConnection) {
-            Message.activityBroadcast(parentServer, activity);
+        // broadcast activity to other servers except the one it comes from
+        if (parentConnection != sourceConnection) {
+            Message.activityBroadcast(parentConnection, activity);
         }
-        if (lChildServer != sourceConnection) {
-            Message.activityBroadcast(lChildServer, activity);
+        if (lChildConnection != sourceConnection) {
+            Message.activityBroadcast(lChildConnection, activity);
         }
-        if (rChildServer != sourceConnection) {
-            Message.activityBroadcast(rChildServer, activity);
+        if (rChildConnection != sourceConnection) {
+            Message.activityBroadcast(rChildConnection, activity);
         }
         return false;
     }
@@ -226,7 +300,9 @@ public class Control extends Thread {
     }
 
     /**
-     * A new incoming connection has been established, and a reference is returned to it
+     * A new incoming connection has been established, and a reference is returned to it.
+     * 1. remote server -> local server
+     * 2. client -> local server
      *
      * @param s
      * @return
@@ -237,12 +313,13 @@ public class Control extends Thread {
         Connection c = new Connection(s);
         clientConnections.add(c);
         return c;
-
     }
 
 
     /**
-     * A new outgoing connection has been established, and a reference is returned to it
+     * A new outgoing connection has been established, and a reference is returned to it.
+     * Only local server -> remote server
+     * remote server will be the parent of local server
      *
      * @param s
      * @return
@@ -251,7 +328,8 @@ public class Control extends Thread {
     public synchronized Connection outgoingConnection(Socket s) throws IOException {
         log.debug("outgoing connection: " + Settings.socketAddress(s));
         Connection c = new Connection(s);
-        clientConnections.add(c);
+        parentConnection = c;
+        Message.authenticate(c);
         return c;
     }
 
@@ -261,14 +339,14 @@ public class Control extends Thread {
         log.info("using activity interval of " + Settings.getActivityInterval() + " milliseconds");
         while (!term) {
             // do something with 5 second intervals in between
-            if (parentServer != null) {
-                Message.serverAnnounce(parentServer, clientConnections.size());
+            if (parentConnection != null) {
+                Message.serverAnnounce(parentConnection, clientConnections.size());
             }
-            if (lChildServer != null) {
-                Message.serverAnnounce(lChildServer, clientConnections.size());
+            if (lChildConnection != null) {
+                Message.serverAnnounce(lChildConnection, clientConnections.size());
             }
-            if (rChildServer != null) {
-                Message.serverAnnounce(rChildServer, clientConnections.size());
+            if (rChildConnection != null) {
+                Message.serverAnnounce(rChildConnection, clientConnections.size());
             }
             try {
                 Thread.sleep(Settings.getActivityInterval());
@@ -281,7 +359,7 @@ public class Control extends Thread {
                 term = doActivity();
             }
         }
-        log.info("closing " + clientConnections.size() + " clientConnections");
+        log.info("closing " + clientConnections.size() + " client connections");
         // clean up
         for (Connection connection : clientConnections) {
             connection.closeCon();

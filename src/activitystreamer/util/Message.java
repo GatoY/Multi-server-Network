@@ -30,6 +30,7 @@ public class Message {
         json.put("command", Message.INVALID_MESSAGE);
         json.put("info", info);
         con.writeMsg(json.toJSONString());
+        con.closeCon();
         return true;
     }
 
@@ -45,6 +46,7 @@ public class Message {
         json.put("command", Message.AUTHENTICATION_FAIL);
         json.put("info", info);
         con.writeMsg(json.toJSONString());
+        con.closeCon();
         return true;
     }
 
@@ -56,6 +58,15 @@ public class Message {
         json.put("hostname", Settings.getLocalHostname());
         json.put("port", Settings.getLocalPort());
         con.writeMsg(json.toJSONString());
+    }
+
+    public synchronized static boolean lockRequest(Connection con, String username, String secret) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOCK_REQUEST);
+        json.put("username", username);
+        json.put("secret", secret);
+        con.writeMsg(json.toJSONString());
+        return false;
     }
 
     public synchronized static boolean registerFailed(Connection con, String info) {
@@ -115,7 +126,6 @@ public class Message {
         return json.toJSONString();
     }
 
-
     public synchronized static boolean loginSuccess(Connection con, String info) {
         JSONObject json = new JSONObject();
         json.put("command", Message.LOGIN_SUCCESS);
@@ -123,7 +133,6 @@ public class Message {
         con.writeMsg(json.toJSONString());
         return false;
     }
-
 
     public synchronized static boolean loginFailed(Connection con, String info) {
         JSONObject json = new JSONObject();
@@ -143,8 +152,8 @@ public class Message {
     public synchronized static void redirect(Connection con) {
         JSONObject json = new JSONObject();
         json.put("command", Message.REDIRECT);
-        json.put("hostname", Settings.getRemoteHostname());
-        json.put("port", Settings.getRemotePort());
+        json.put("hostname", con.getSocket().getInetAddress());
+        json.put("port", con.getSocket().getPort());
         con.writeMsg(json.toJSONString());
     }
 

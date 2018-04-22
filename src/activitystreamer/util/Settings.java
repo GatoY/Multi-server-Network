@@ -7,8 +7,6 @@ import java.security.SecureRandom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random; //ms
 
 public class Settings {
@@ -25,9 +23,8 @@ public class Settings {
     private static int serverIdLength = 26;
     private static boolean remoteAuthenticated = false;
     public static final String serverSecret = "gen1p85md2qnq0d59qll3fbcoa";
-    private static List<User> clientList = new ArrayList<>();
 
-    //For client
+    //for client
     private static String userSecret = null;
     private static String username = "anonymous";
 
@@ -137,11 +134,4 @@ public class Settings {
         Settings.remoteAuthenticated = remoteAuthenticated;
     }
 
-    public static List<User> getClientList() {
-        return clientList;
-    }
-
-    public static void setClientList(List<User> clientList) {
-        Settings.clientList = clientList;
-    }
 }
