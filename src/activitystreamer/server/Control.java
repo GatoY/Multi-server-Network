@@ -106,6 +106,8 @@ public class Control extends Thread {
 			return !login(con, request);
 		case Message.LOGOUT:
 			return true;
+		case Message.REGISTER:
+			return !register(con, request);
 		case Message.ACTIVITY_MESSAGE:
 			if (!request.containsKey("username")) {
 				return Message.authenticationFail(con, "the message did not contain a username");
@@ -158,6 +160,39 @@ public class Control extends Thread {
 		return true;
 	}
 
+	public synchronized boolean register(Connection con, JSONObject request) {
+		JSONObject response = new JSONObject();
+		if (request.containsKey("username") && request.containsKey("password")) {
+			String username = (String) request.get("username");
+			String password = (String) request.get("password");
+			if (lockRequest(username, password)) {
+				response.put("command", Message.REGISTER_SUCCESS);
+				response.put("info", "register success for "+username);
+				con.writeMsg(response.toJSONString());
+				//success
+				return true;
+			} else {
+				response.put("command", Message.REGISTER_FAILED);
+				response.put("info", username+" is already registered with the system");
+				con.writeMsg(response.toJSONString());
+				//failed
+				return false;
+			}
+
+		} else {
+			response.put("command", Message.INVALID_MESSAGE);
+		}
+		return false;
+	}
+	
+	public synchronized boolean lockRequest(String username, String password) {
+		JSONObject broadcast = new JSONObject();
+		broadcast.put("command", "LOCK_REQUEST");
+		broadcast.put("username", username);
+		broadcast.put("secret", password);
+		return true;
+	}
+	
 	private boolean broadcastActivity(List<Connection> connections, JSONObject activity) {
 		for (Connection c : connections) {
 			Message.activityBroadcast(c, activity);
