@@ -154,7 +154,7 @@ public class Control extends Thread {
             user.setPort(con.getSocket().getLocalPort()); // TODO check getLocalPort getPort
             user.setLogin(false);
             Settings.getClientList().add(user);
-            return Message.register(con, "register success for " + username); // false
+            return Message.registerSuccess(con, "register success for " + username); // false
         }
     }
 

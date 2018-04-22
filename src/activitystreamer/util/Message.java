@@ -66,13 +66,55 @@ public class Message {
         return true;
     }
 
-    public synchronized static boolean register(Connection con, String info) {
+    public synchronized static boolean registerSuccess(Connection con, String info) {
         JSONObject json = new JSONObject();
         json.put("command", Message.REGISTER_SUCCESS);
         json.put("info", info);
         con.writeMsg(json.toJSONString());
         return false;
     }
+
+    /**
+     * Client register
+     *
+     * @param userName
+     * @param secret
+     * @return
+     */
+    public synchronized static String register(String userName, String secret) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.REGISTER);
+        json.put("username", userName);
+        json.put("secret", secret);
+        return json.toJSONString();
+    }
+
+    /**
+     * Client anonymous login
+     *
+     * @return
+     */
+    public synchronized static String login() {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOGIN);
+        json.put("username", Settings.getUsername());
+        return json.toJSONString();
+    }
+
+    /**
+     * Client normal login
+     *
+     * @param userName
+     * @return
+     */
+    public synchronized static String login(String userName) {
+        JSONObject json = new JSONObject();
+        json.put("command", Message.LOGIN);
+        json.put("username", userName);
+        json.put("secret", Settings.getUserSecret());
+        return json.toJSONString();
+    }
+
 
     public synchronized static boolean loginSuccess(Connection con, String info) {
         JSONObject json = new JSONObject();
@@ -96,7 +138,6 @@ public class Message {
         json.put("command", Message.LOGOUT);
         con.writeMsg(json.toJSONString());
         return true;
-
     }
 
     public synchronized static void redirect(Connection con) {
@@ -114,6 +155,5 @@ public class Message {
         con.writeMsg(json.toJSONString());
         return false;
     }
-
 
 }
