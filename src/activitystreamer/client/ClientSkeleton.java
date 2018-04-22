@@ -153,9 +153,25 @@ public class ClientSkeleton extends Thread {
 		JSONParser jp = new JSONParser();
 		JSONObject jo = (JSONObject) jp.parse(msg);
 		String cmd = (String) jo.get("command");
-		if(cmd.equals(Message.REGISTER_SUCCESS)) {
+		if (cmd.equals(Message.REGISTER_SUCCESS)) {
 			out.write(initJsonString(Settings.getUsername()) + "\n");
 			out.flush();
+		} 
+		else if (cmd.equals(Message.REDIRECT)) {
+			String hostname = (String) jo.get("hostname");
+			Integer port = (Integer) jo.get("port");
+			Settings.setRemoteHostname(hostname);
+			Settings.setRemotePort(port);
+			
+			try {
+				socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
+				dos = new DataOutputStream(socket.getOutputStream());
+				isr = new InputStreamReader(socket.getInputStream());
+				br = new BufferedReader(isr);
+				initMsg();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		
 		
