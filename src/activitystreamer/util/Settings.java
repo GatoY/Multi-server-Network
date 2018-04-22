@@ -32,15 +32,19 @@ public class Settings {
 
     // -ms set server id.
     public static void setServerId() {
-        String range = "0123456789abcdefghijklmnopqrstuvwxyz";
+        serverId = genRandomString();
+    }
+    
+    // -lun generate random String -- made by Mason
+    public static String genRandomString() {
+    	String range = "0123456789abcdefghijklmnopqrstuvwxyz";
         Random rd = new Random();
-        StringBuilder randomId = new StringBuilder();
-        // randomId.length = 26
+        StringBuffer randomId = new StringBuffer();
+        //randomId.length = 26
         for (int i = 0; i < serverIdLength; i++) {
             randomId.append(range.charAt(rd.nextInt(range.length())));
         }
-        serverId = randomId.toString();
-        return;
+        return randomId.toString();
     }
 
     // -yu get server id.

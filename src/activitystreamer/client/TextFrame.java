@@ -33,8 +33,10 @@ public class TextFrame extends JFrame implements ActionListener {
     private JButton sendButton;
     private JButton disconnectButton;
     private JSONParser parser = new JSONParser();
+    StringBuffer outputMSG;
 
     public TextFrame() {
+    		outputMSG = new StringBuffer();
         setTitle("ActivityStreamer Text I/O");
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new GridLayout(1, 2));
@@ -81,7 +83,9 @@ public class TextFrame extends JFrame implements ActionListener {
         JsonParser jp = new JsonParser();
         JsonElement je = jp.parse(obj.toJSONString());
         String prettyJsonString = gson.toJson(je);
-        outputText.setText(prettyJsonString);
+        outputMSG.append(prettyJsonString);
+        System.out.println(outputMSG);
+        outputText.setText(outputMSG.toString());
         outputText.revalidate();
         outputText.repaint();
     }
