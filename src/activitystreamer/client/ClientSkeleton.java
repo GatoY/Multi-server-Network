@@ -12,7 +12,7 @@ import java.io.*;
 import java.net.Socket;
 
 public class ClientSkeleton extends Thread {
-	//msw9527 ib8sj7htw34gcmgqc183cbmpo2
+	//msw9527 ib8sj7htw34gcmgqc183cbmpo2  already registered in aaron's server
     private static final Logger log = LogManager.getLogger();
     private static ClientSkeleton clientSolution;
     private TextFrame textFrame;
@@ -122,7 +122,7 @@ public class ClientSkeleton extends Thread {
 	
 	/**
 	 * overwrite iniJsonString(), specifically for normal login
-	 * @param userName
+	 * @param userName: username
 	 * @return normal login JSONString
 	 */
 	private String initJsonString(String userName) {
@@ -136,8 +136,8 @@ public class ClientSkeleton extends Thread {
 	
 	/**
 	 * overwrite iniJsonString(), specifically for register
-	 * @param userName
-	 * @param secret
+	 * @param userName :username
+	 * @param secret : user's secret
 	 * @return register JSONString
 	 */
 	private String initJsonString(String userName, String secret) {
