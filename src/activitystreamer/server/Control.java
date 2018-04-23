@@ -90,18 +90,14 @@ public class Control extends Thread {
 		case Message.REGISTER:
 			return register(con, request);
 		case Message.LOCK_REQUEST:
-			// TODO Check the if the user has registered locally. If not, relay the
-			// LOCK_REQUEST to other servers
 			return dealLockRequest(con, request);
 		case Message.LOCK_DENIED:
-			// TODO intermediate nodes ??
-			// end node
 			dealLockDenied(con, request);
 			return false;
 		case Message.LOCK_ALLOWED:
-			// TODO intermediate nodes ??
-			dealLockAllowed(con, request);
-
+			if (dealLockAllowed(con, request)) {
+				return true;
+			}
 			addUser(con, (String) request.get("username"), (String) request.get("secret"));
 			return Message.registerSuccess(con, "register success for " + request.get("username"));
 		case Message.LOGIN:
@@ -152,14 +148,20 @@ public class Control extends Thread {
 
 	private synchronized boolean register(Connection con, JSONObject request) {
 		if (!request.containsKey("username") || !request.containsKey("secret")) {
+			Message.invalidMsg(con, "The message is incorrect");
 			return true;
 		}
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
+		if (!username.equals("anonymouse")) {
+			Message.invalidMsg(con, "You have already logged in.");
+			return true;
+		}
+
 		if (isUserRegisteredLocally(username, secret)) {
 			return Message.registerFailed(con, username + " is already registered with the system"); // true
 		} else {
-			//TODO add username, secret to list.
+			clientList.add(new User(username, secret));
 			if (parentConnection != null) {
 				Message.lockRequest(parentConnection, username, secret);
 			}
@@ -173,13 +175,12 @@ public class Control extends Thread {
 		}
 	}
 
-	private void dealLockAllowed(Connection con, JSONObject request) {
+	private boolean dealLockAllowed(Connection con, JSONObject request) {
 		if (!(con.equals(parentConnection) || con.equals(lChildConnection) || con.equals(rChildConnection))) {
-			Message.invalidMsg(con, "The connection has not authenticated");
+			return Message.invalidMsg(con, "The connection has not authenticated");
 		}
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
-		//TODO add username secret to list if not exist.
 		if (con.equals(parentConnection)) {
 			if (lChildConnection != null) {
 				Message.lockAllowed(lChildConnection, username, secret);
@@ -192,6 +193,7 @@ public class Control extends Thread {
 				Message.lockAllowed(parentConnection, username, secret);
 			}
 		}
+		return false;
 	}
 
 	private void dealLockDenied(Connection con, JSONObject request) {
@@ -200,7 +202,11 @@ public class Control extends Thread {
 		}
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
-		//TODO remove username, password from list if exist.
+		for (User user : clientList) {
+			if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
+				clientList.remove(user);
+			}
+		}
 		if (con.equals(parentConnection)) {
 			if (lChildConnection != null) {
 				Message.lockDenied(lChildConnection, username, secret);
@@ -223,6 +229,11 @@ public class Control extends Thread {
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
 		if (isUserRegisteredLocally(username, secret)) {
+			for (User user : clientList) {
+				if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
+					clientList.remove(user);
+				}
+			}
 			if (lChildConnection != null) {
 				Message.lockDenied(lChildConnection, username, secret);
 			}
@@ -233,7 +244,7 @@ public class Control extends Thread {
 				Message.lockDenied(parentConnection, username, secret);
 			}
 		} else {
-			//TODO put username, secret to list.
+			clientList.add(new User(username, secret));
 			if (con.equals(parentConnection)) {
 				if (lChildConnection == null & rChildConnection == null) {
 					Message.lockAllowed(parentConnection, username, secret);
