@@ -21,9 +21,9 @@ public class Control extends Thread {
 
     protected static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
+
     private static Map<Connection, Integer> loadMap = new HashMap<>();
     private static List<User> clientList = new ArrayList<>(); // the registered users on THIS server
-
 
     public static Control getInstance() {
         if (control == null) {
@@ -57,9 +57,9 @@ public class Control extends Thread {
         }
     }
 
-
     /**
-     * Processing incoming messages from the connection. Return true if the connection should close.
+     * Processing incoming messages from the connection. Return true if the
+     * connection should close.
      *
      * @param con
      * @param msg result JSON string
@@ -89,16 +89,14 @@ public class Control extends Thread {
             case Message.REGISTER:
                 return register(con, request);
             case Message.LOCK_REQUEST:
-                // TODO Check the if the user has registered locally. If not, relay the LOCK_REQUEST to other servers
+                return dealLockRequest(con, request);
             case Message.LOCK_DENIED:
-                // TODO intermediate nodes ??
-
-                // end node
-                return Message.registerFailed(con, request.get("username") + " is already registered with the system");
+                dealLockDenied(con, request);
+                return false;
             case Message.LOCK_ALLOWED:
-                // TODO intermediate nodes ??
-
-                // end node
+                if (dealLockAllowed(con, request)) {
+                    return true;
+                }
                 addUser(con, (String) request.get("username"), (String) request.get("secret"));
                 return Message.registerSuccess(con, "register success for " + request.get("username"));
             case Message.LOGIN:
@@ -149,32 +147,143 @@ public class Control extends Thread {
 
     private synchronized boolean register(Connection con, JSONObject request) {
         if (!request.containsKey("username") || !request.containsKey("secret")) {
+            Message.invalidMsg(con, "The message is incorrect");
             return true;
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        if (!isUserRegisteredLocally()) {
+        if (!username.equals("anonymous")) {
+            Message.invalidMsg(con, "You have already logged in.");
+            return true;
+        }
+
+        if (isUserRegisteredLocally(username)) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
         } else {
-            return Message.lockRequest(con, username, secret);
+            clientList.add(new User(username, secret));
+            if (parentConnection != null) {
+                Message.lockRequest(parentConnection, username, secret);
+            }
+            if (lChildConnection != null) {
+                Message.lockRequest(lChildConnection, username, secret);
+            }
+            if (rChildConnection != null) {
+                Message.lockRequest(rChildConnection, username, secret);
+            }
+            return false;
         }
+    }
+
+    private boolean dealLockAllowed(Connection con, JSONObject request) {
+        if (!(con.equals(parentConnection) || con.equals(lChildConnection) || con.equals(rChildConnection))) {
+            return Message.invalidMsg(con, "The connection has not authenticated");
+        }
+        String username = (String) request.get("username");
+        String secret = (String) request.get("secret");
+        if (con.equals(parentConnection)) {
+            if (lChildConnection != null) {
+                Message.lockAllowed(lChildConnection, username, secret);
+            }
+            if (rChildConnection != null) {
+                Message.lockAllowed(rChildConnection, username, secret);
+            }
+        } else {
+            if (parentConnection != null) {
+                Message.lockAllowed(parentConnection, username, secret);
+            }
+        }
+        return false;
+    }
+
+    private void dealLockDenied(Connection con, JSONObject request) {
+        if (!(con.equals(parentConnection) || con.equals(lChildConnection) || con.equals(rChildConnection))) {
+            Message.invalidMsg(con, "The connection has not authenticated");
+        }
+        String username = (String) request.get("username");
+        String secret = (String) request.get("secret");
+        for (User user : clientList) {
+            if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
+                clientList.remove(user);
+            }
+        }
+        if (con.equals(parentConnection)) {
+            if (lChildConnection != null) {
+                Message.lockDenied(lChildConnection, username, secret);
+            }
+            if (rChildConnection != null) {
+                Message.lockDenied(rChildConnection, username, secret);
+            }
+        } else {
+            if (parentConnection != null) {
+                Message.lockDenied(parentConnection, username, secret);
+            }
+        }
+
+    }
+
+    private boolean dealLockRequest(Connection con, JSONObject request) {
+        if (!(con.equals(parentConnection) || con.equals(lChildConnection) || con.equals(rChildConnection))) {
+            return Message.invalidMsg(con, "The connection has not authenticated");
+        }
+        String username = (String) request.get("username");
+        String secret = (String) request.get("secret");
+        if (isUserRegisteredLocally(username)) {
+            for (User user : clientList) {
+                if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
+                    clientList.remove(user);
+                }
+            }
+            if (lChildConnection != null) {
+                Message.lockDenied(lChildConnection, username, secret);
+            }
+            if (rChildConnection != null) {
+                Message.lockDenied(rChildConnection, username, secret);
+            }
+            if (parentConnection != null) {
+                Message.lockDenied(parentConnection, username, secret);
+            }
+        } else {
+            clientList.add(new User(username, secret));
+            if (con.equals(parentConnection)) {
+                if (lChildConnection == null & rChildConnection == null) {
+                    Message.lockAllowed(parentConnection, username, secret);
+                    return false;
+                }
+                if (lChildConnection != null) {
+                    Message.lockRequest(lChildConnection, username, secret);
+                }
+                if (rChildConnection != null) {
+                    Message.lockRequest(rChildConnection, username, secret);
+                }
+
+            } else {
+                if (parentConnection != null) {
+                    Message.lockRequest(parentConnection, username, secret);
+                } else {
+                    Message.lockAllowed(lChildConnection, username, secret);
+                    Message.lockAllowed(rChildConnection, username, secret);
+                }
+            }
+        }
+        return false;
     }
 
     private void addUser(Connection con, String username, String secret) {
         User user = new User(username, secret);
-        user.setHostname(con.getSocket().getInetAddress().toString()); //TODO review
+        user.setHostname(con.getSocket().getInetAddress().toString()); // TODO review
         user.setPort(con.getSocket().getPort()); // TODO review
         user.setLogin(false);
         clientList.add(user);
     }
 
-    private boolean isUserRegisteredLocally() {
-        //TODO determine whether the user has registered before
-        return false;
-    }
-
-    private boolean isUserRegisteredRemotely(Connection con, String username, String secret) {
-        return false;
+    private boolean isUserRegisteredLocally(String username) {
+        boolean flag = false;
+        for (User user : clientList) {
+            if (user.getUserName().equals(username)) {
+                flag = true;
+            }
+        }
+        return flag;
     }
 
     private void onReceiveServerAnnounce(Connection con, JSONObject request) {
@@ -232,7 +341,8 @@ public class Control extends Thread {
 
     private synchronized boolean logout(Connection con) {
         for (User user : clientList) {
-            if (user.getHostname().equals(con.getSocket().getLocalAddress().toString()) && user.getPort() == con.getSocket().getLocalPort()) {
+            if (user.getHostname().equals(con.getSocket().getInetAddress().toString())
+                    && user.getPort() == con.getSocket().getPort()) {
                 user.setLogin(false);
             }
         }
@@ -291,9 +401,8 @@ public class Control extends Thread {
     }
 
     /**
-     * A new incoming connection has been established, and a reference is returned to it.
-     * 1. remote server -> local server
-     * 2. client -> local server
+     * A new incoming connection has been established, and a reference is returned
+     * to it. 1. remote server -> local server 2. client -> local server
      *
      * @param s
      * @return
@@ -306,11 +415,10 @@ public class Control extends Thread {
         return c;
     }
 
-
     /**
-     * A new outgoing connection has been established, and a reference is returned to it.
-     * Only local server -> remote server
-     * remote server will be the parent of local server
+     * A new outgoing connection has been established, and a reference is returned
+     * to it. Only local server -> remote server remote server will be the parent of
+     * local server
      *
      * @param s
      * @return
@@ -323,7 +431,6 @@ public class Control extends Thread {
         Message.authenticate(c);
         return c;
     }
-
 
     @Override
     public void run() {
@@ -357,7 +464,6 @@ public class Control extends Thread {
         }
         listener.setTerm(true);
     }
-
 
     public boolean doActivity() {
         return false;
