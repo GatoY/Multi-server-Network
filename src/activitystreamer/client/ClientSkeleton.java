@@ -106,7 +106,13 @@ public class ClientSkeleton extends Thread {
     }
 
 
-    
+    /**
+     * process incoming message
+     * @param msg
+     * @return JSONObject
+     * @throws ParseException
+     * @throws IOException
+     */
 	private JSONObject process(String msg) throws ParseException, IOException {
         JSONObject jo = (JSONObject) jp.parse(msg);
         textFrame.setOutputText(jo);
@@ -120,6 +126,11 @@ public class ClientSkeleton extends Thread {
         return jo;
     }
 
+	/**
+	 * deal with REDIRECT message received 
+	 * @param jo
+	 * @throws IOException
+	 */
     private void redirect(JSONObject jo) throws IOException {
         String hostname = (String) jo.get("hostname");
         int port = ((Long) jo.get("port")).intValue();
