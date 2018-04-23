@@ -341,8 +341,8 @@ public class Control extends Thread {
 
     private synchronized boolean logout(Connection con) {
         for (User user : clientList) {
-            if (user.getHostname().equals(con.getSocket().getLocalAddress().toString())
-                    && user.getPort() == con.getSocket().getLocalPort()) {
+            if (user.getHostname().equals(con.getSocket().getInetAddress().toString())
+                    && user.getPort() == con.getSocket().getPort()) {
                 user.setLogin(false);
             }
         }
