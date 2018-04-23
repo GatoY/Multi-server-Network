@@ -282,6 +282,16 @@ public class Control extends Thread {
         return flag;
     }
 
+    private boolean isUserLoggedInLocally(String username) {
+        boolean flag = false;
+        for (User user : clientList) {
+            if (user.getUserName().equals(username) && user.isLogin()) {
+                flag = true;
+            }
+        }
+        return flag;
+    }
+
     private void onReceiveServerAnnounce(Connection con, JSONObject request) {
         loadMap.put(con, (Integer) request.get("load"));
         if (con != parentConnection) {
@@ -347,23 +357,32 @@ public class Control extends Thread {
 
     private synchronized boolean onReceiveActivityMessage(Connection con, JSONObject request) {
         if (!request.containsKey("username")) {
-            return Message.authenticationFail(con, "the message did not contain a username");
+            return Message.invalidMsg(con, "the message did not contain a username");
         }
         if (!request.containsKey("secret")) {
-            return Message.authenticationFail(con, "the message did not contain a secret");
+            return Message.invalidMsg(con, "the message did not contain a secret");
+        }
+        if (!request.containsKey("activity")) {
+            return Message.invalidMsg(con, "the message did not contain an activity");
         }
         String activityUsername = (String) request.get("username");
         String activityPassword = (String) request.get("secret");
+        JSONObject activityJson = (JSONObject) request.get("activity");
+        activityJson.put("authenticated_user", activityUsername);
+
+
+//TODO
+
         if (activityUsername.equals("anonymous")) {
-            if (activityUsername.equals(Settings.getUsername())) {
-                return broadcastActivity(con, (JSONObject) request.get("activity"));
+            if (activityUsername.equals()) {
+                return broadcastActivity(con, activityJson);
             }
         } else {
-            if (!activityUsername.equals(Settings.getUsername())
-                    || !activityPassword.equals(Settings.getUserSecret())) {
+            if (!activityUsername.equals()
+                    || !activityPassword.equals()) {
                 return Message.authenticationFail(con, "the supplied secret is incorrect: " + activityPassword);
             }
-            return broadcastActivity(con, (JSONObject) request.get("activity"));
+            return broadcastActivity(con, activityJson);
         }
         return true;
     }
