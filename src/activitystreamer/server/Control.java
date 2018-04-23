@@ -21,7 +21,7 @@ public class Control extends Thread {
 
     protected static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
-
+    private static boolean loginFlag=false;
     private static Map<Connection, Integer> loadMap = new HashMap<>();
     private static List<User> clientList = new ArrayList<>(); // the registered users on THIS server
 
@@ -152,7 +152,7 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        if (!username.equals("anonymous")) {
+        if (loginFlag=true) {
             Message.invalidMsg(con, "You have already logged in.");
             return true;
         }
@@ -160,6 +160,7 @@ public class Control extends Thread {
         if (isUserRegisteredLocally(username)) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
         } else {
+        		if(parentConnection!=null||lChildConnection != null||rChildConnection != null) {
             clientList.add(new User(username, secret));
             if (parentConnection != null) {
                 Message.lockRequest(parentConnection, username, secret);
@@ -171,6 +172,10 @@ public class Control extends Thread {
                 Message.lockRequest(rChildConnection, username, secret);
             }
             return false;
+        }
+        		else {
+        			return Message.registerSuccess(con, "register success for " + username);
+        		}
         }
     }
 
@@ -336,6 +341,7 @@ public class Control extends Thread {
         } else {
             return Message.invalidMsg(con, "missed username or secret");
         }
+        loginFlag = true;
         return false;
     }
 
