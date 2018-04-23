@@ -14,6 +14,7 @@ import org.json.simple.parser.JSONParser;
 import activitystreamer.util.Settings;
 
 public class Control extends Thread {
+
     private static final Logger log = LogManager.getLogger();
     private static List<Connection> clientConnections;
     private static boolean term = false;
@@ -21,9 +22,9 @@ public class Control extends Thread {
 
     protected static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
-
     private static Map<Connection, Integer> loadMap = new HashMap<>();
     private static List<User> clientList = new ArrayList<>(); // the registered users on THIS server
+    private static Map<Connection, Boolean> loginOrNot = new HashMap<>();
 
     public static Control getInstance() {
         if (control == null) {
@@ -153,20 +154,29 @@ public class Control extends Thread {
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
 
+        if (loginOrNot.containsKey(con)) {
+            Message.invalidMsg(con, "You have already logged in.");
+            return true;
+        }
+
         if (isUserRegisteredLocally(username)) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
         } else {
-            clientList.add(new User(username, secret));
-            if (parentConnection != null) {
-                Message.lockRequest(parentConnection, username, secret);
+            if (parentConnection != null || lChildConnection != null || rChildConnection != null) {
+                clientList.add(new User(username, secret));
+                if (parentConnection != null) {
+                    Message.lockRequest(parentConnection, username, secret);
+                }
+                if (lChildConnection != null) {
+                    Message.lockRequest(lChildConnection, username, secret);
+                }
+                if (rChildConnection != null) {
+                    Message.lockRequest(rChildConnection, username, secret);
+                }
+                return false;
+            } else {
+                return Message.registerSuccess(con, "register success for " + username);
             }
-            if (lChildConnection != null) {
-                Message.lockRequest(lChildConnection, username, secret);
-            }
-            if (rChildConnection != null) {
-                Message.lockRequest(rChildConnection, username, secret);
-            }
-            return false;
         }
     }
 
@@ -342,6 +352,7 @@ public class Control extends Thread {
         } else {
             return Message.invalidMsg(con, "missed username or secret");
         }
+        loginOrNot.put(con, true);
         return false;
     }
 
@@ -371,20 +382,13 @@ public class Control extends Thread {
         activityJson.put("authenticated_user", activityUsername);
 
 
-//TODO
-
-        if (activityUsername.equals("anonymous")) {
-            if (activityUsername.equals()) {
-                return broadcastActivity(con, activityJson);
-            }
-        } else {
-            if (!activityUsername.equals()
-                    || !activityPassword.equals()) {
-                return Message.authenticationFail(con, "the supplied secret is incorrect: " + activityPassword);
-            }
-            return broadcastActivity(con, activityJson);
+        // TODO still needs modification
+        if (!activityUsername.equals("anonymous") && !loginOrNot.containsKey(con)) {
+            return Message.authenticationFail(con, "the username and secret do not match the logged in the user, " +
+                    "or the user has not logged in yet");
         }
-        return true;
+
+        return broadcastActivity(con, activityJson);
     }
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
