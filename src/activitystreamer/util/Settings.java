@@ -22,7 +22,7 @@ public class Settings {
     // -ms, serverIdLength
     private static int serverIdLength = 26;
     private static boolean remoteAuthenticated = false;
-    public static final String serverSecret = "gen1p85md2qnq0d59qll3fbcoa";
+    public static String serverSecret;
 
     //for client
     private static String userSecret = null;
@@ -113,6 +113,15 @@ public class Settings {
     public static void setLocalHostname(String localHostname) {
         Settings.localHostname = localHostname;
     }
+
+    public static String getServerSecret() {
+        return serverSecret;
+    }
+
+    public static void setServerSecret(String serverSecret) {
+        Settings.serverSecret = serverSecret;
+    }
+
 
     /*
      * some general helper functions

@@ -152,10 +152,6 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        if (!username.equals("anonymous")) {
-            Message.invalidMsg(con, "You have already logged in.");
-            return true;
-        }
 
         if (isUserRegisteredLocally(username)) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
