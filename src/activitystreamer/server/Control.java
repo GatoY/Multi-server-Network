@@ -160,8 +160,10 @@ public class Control extends Thread {
         if (isUserRegisteredLocally(username)) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
         } else {
+            	userList.add(new User(username, secret));
+//            	addUser(con, username, secret);
             if (parentConnection != null || lChildConnection != null || rChildConnection != null) {
-                userList.add(new User(username, secret));
+                
                 if (parentConnection != null) {
                     Message.lockRequest(parentConnection, username, secret);
                 }
@@ -404,13 +406,13 @@ public class Control extends Thread {
             Message.activityBroadcast(c, activity);
         }
         // broadcast activity to other servers except the one it comes from
-        if (parentConnection != sourceConnection) {
+        if (parentConnection != null && parentConnection != sourceConnection) {
             Message.activityBroadcast(parentConnection, activity);
         }
-        if (lChildConnection != sourceConnection) {
+        if (lChildConnection != null && lChildConnection != sourceConnection) {
             Message.activityBroadcast(lChildConnection, activity);
         }
-        if (rChildConnection != sourceConnection) {
+        if (rChildConnection != null && rChildConnection != sourceConnection) {
             Message.activityBroadcast(rChildConnection, activity);
         }
         return false;

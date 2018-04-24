@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.omg.CORBA.FREE_MEM;
 
 import java.io.*;
 import java.net.Socket;
@@ -50,7 +51,18 @@ public class ClientSkeleton extends Thread {
         start();
     }
 
-    public void sendActivityObject(JSONObject activityObj) {
+    @SuppressWarnings("unchecked")
+	public void sendActivityObject(JSONObject activityObj) {
+    		if (activityObj.containsKey("activity")) {
+    			JSONObject jo = new JSONObject();
+    			jo.put("command", "ACTIVITY_MESSAGE");
+    			jo.put("username", Settings.getUsername());
+    			jo.put("secret", Settings.getUserSecret());
+    			jo.put("activity", activityObj.get("activity"));
+    			System.out.println(jo.toJSONString());
+    		//	{"activity":{"S":"S"}}
+    			activityObj = jo;
+    		}
         out.write(activityObj.toJSONString() + "\n");
         out.flush();
     }
