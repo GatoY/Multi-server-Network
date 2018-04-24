@@ -44,6 +44,8 @@ public class Control extends Thread {
             log.fatal("failed to startup a listening thread: " + e1);
             System.exit(-1);
         }
+        //注释 for test
+//        start();
     }
 
     public void initiateConnection() {
@@ -80,7 +82,6 @@ public class Control extends Thread {
         }
 
         String command = (String) request.get("command");
-
         switch (command) {
             case Message.INVALID_MESSAGE:
                 return true;
@@ -131,6 +132,7 @@ public class Control extends Thread {
         } else if (rChildConnection == null) {
             rChildConnection = con;
         } else {
+//        		socket require closing
             log.debug("the connection was refused");
         }
 
@@ -294,14 +296,14 @@ public class Control extends Thread {
 
 
     private boolean onReceiveServerAnnounce(Connection con, JSONObject request) {
-        loadMap.put(con, (Integer) request.get("load"));
-        if (con != parentConnection) {
+        loadMap.put(con, ((Long) request.get("load")).intValue());
+        if (parentConnection != null && con != parentConnection) {
             parentConnection.writeMsg(request.toJSONString());
         }
-        if (con != lChildConnection) {
+        if (lChildConnection != null && con != lChildConnection) {
             lChildConnection.writeMsg(request.toJSONString());
         }
-        if (con != rChildConnection) {
+        if (rChildConnection != null && con != rChildConnection) {
             rChildConnection.writeMsg(request.toJSONString());
         }
         return false;
