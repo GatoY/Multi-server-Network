@@ -161,8 +161,8 @@ public class Control extends Thread {
         if (isUserRegisteredLocally(username)) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
         } else {
-            	userList.add(new User(username, secret));
-//            	addUser(con, username, secret);
+//            	userList.add(new User(username, secret));
+            addUser(con, username, secret);
             if (parentConnection != null || lChildConnection != null || rChildConnection != null) {
                 if (parentConnection != null) {
                     Message.lockRequest(parentConnection, username, secret);
@@ -250,7 +250,7 @@ public class Control extends Thread {
             }
         } else {
 //            	addUser(con, username, secret);
-        			userList.add(new User(username, secret));
+            userList.add(new User(username, secret));
             if (con.equals(parentConnection)) {
                 if (lChildConnection == null & rChildConnection == null) {
                     Message.lockAllowed(parentConnection, username, secret);
@@ -295,13 +295,13 @@ public class Control extends Thread {
 
     private boolean onReceiveServerAnnounce(Connection con, JSONObject request) {
         loadMap.put(con, (Integer) request.get("load"));
-        if (con != parentConnection) {
+        if (parentConnection != null && con.equals(parentConnection)) {
             parentConnection.writeMsg(request.toJSONString());
         }
-        if (con != lChildConnection) {
+        if (lChildConnection != null && con.equals(lChildConnection)) {
             lChildConnection.writeMsg(request.toJSONString());
         }
-        if (con != rChildConnection) {
+        if (rChildConnection != null && con.equals(rChildConnection)) {
             rChildConnection.writeMsg(request.toJSONString());
         }
         return false;
@@ -403,7 +403,7 @@ public class Control extends Thread {
 
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
-        for (Connection c : this.getClientConnections()) {
+        for (Connection c : clientConnections) {
             Message.activityBroadcast(c, activity);
         }
         // broadcast activity to other servers except the one it comes from
