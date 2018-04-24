@@ -161,9 +161,11 @@ public class Control extends Thread {
         if (isUserRegisteredLocally(username)) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
         } else {
-            	userList.add(new User(username, secret));
-//            	addUser(con, username, secret);
+
+//            	userList.add(new User(username, secret));
+            	addUser(con, username, secret);
             if (parentConnection != null || lChildConnection != null || rChildConnection != null) {
+
                 if (parentConnection != null) {
                     Message.lockRequest(parentConnection, username, secret);
                 }
@@ -321,7 +323,7 @@ public class Control extends Thread {
 
     private synchronized boolean login(Connection con, JSONObject request) {
         if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
-            Message.loginSuccess(con, "logged in as user " + true);
+            Message.loginSuccess(con, "logged in as user " + request.get("username"));
             loginOrNot.put(con, true);
             if (checkOtherLoads() != null) {
                 return Message.redirect(Objects.requireNonNull(checkOtherLoads()));
@@ -357,6 +359,7 @@ public class Control extends Thread {
 
     private synchronized boolean logout(Connection con) {
         boolean logout = false;
+
         for (User user : userList) {
             if (user.getLocalSocketAddress().equals(con.getSocket().getLocalSocketAddress())) {
                 user.setLogin(false);

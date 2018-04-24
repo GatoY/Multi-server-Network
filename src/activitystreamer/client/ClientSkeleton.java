@@ -14,8 +14,7 @@ import java.net.Socket;
 
 public class ClientSkeleton extends Thread {
 
-    //-u msw9527 -s ib8sj7htw34gcmgqc183cbmpo2 ,  already registered in Aaron's server
-    //-u msw9526 -s snhu0mn2kliffptwzxts96q7fv ,  already registered in Aaron's server
+
     private static final Logger log = LogManager.getLogger();
     private static ClientSkeleton clientSolution;
     private TextFrame textFrame;
