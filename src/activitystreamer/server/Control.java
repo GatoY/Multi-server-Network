@@ -14,6 +14,7 @@ import org.json.simple.parser.JSONParser;
 import activitystreamer.util.Settings;
 
 public class Control extends Thread {
+
     private static final Logger log = LogManager.getLogger();
     private static List<Connection> clientConnections;
     private static boolean term = false;
@@ -21,9 +22,9 @@ public class Control extends Thread {
 
     protected static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
-
     private static Map<Connection, Integer> loadMap = new HashMap<>();
     private static List<User> clientList = new ArrayList<>(); // the registered users on THIS server
+    private static Map<Connection, Boolean> loginOrNot = new HashMap<>();
 
     public static Control getInstance() {
         if (control == null) {
@@ -153,20 +154,29 @@ public class Control extends Thread {
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
 
+        if (loginOrNot.containsKey(con)) {
+            Message.invalidMsg(con, "You have already logged in.");
+            return true;
+        }
+
         if (isUserRegisteredLocally(username)) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
         } else {
-            clientList.add(new User(username, secret));
-            if (parentConnection != null) {
-                Message.lockRequest(parentConnection, username, secret);
+            if (parentConnection != null || lChildConnection != null || rChildConnection != null) {
+                clientList.add(new User(username, secret));
+                if (parentConnection != null) {
+                    Message.lockRequest(parentConnection, username, secret);
+                }
+                if (lChildConnection != null) {
+                    Message.lockRequest(lChildConnection, username, secret);
+                }
+                if (rChildConnection != null) {
+                    Message.lockRequest(rChildConnection, username, secret);
+                }
+                return false;
+            } else {
+                return Message.registerSuccess(con, "register success for " + username);
             }
-            if (lChildConnection != null) {
-                Message.lockRequest(lChildConnection, username, secret);
-            }
-            if (rChildConnection != null) {
-                Message.lockRequest(rChildConnection, username, secret);
-            }
-            return false;
         }
     }
 
@@ -282,6 +292,16 @@ public class Control extends Thread {
         return flag;
     }
 
+    private boolean isUserLoggedInLocally(String username) {
+        boolean flag = false;
+        for (User user : clientList) {
+            if (user.getUserName().equals(username) && user.isLogin()) {
+                flag = true;
+            }
+        }
+        return flag;
+    }
+
     private void onReceiveServerAnnounce(Connection con, JSONObject request) {
         loadMap.put(con, (Integer) request.get("load"));
         if (con != parentConnection) {
@@ -332,6 +352,7 @@ public class Control extends Thread {
         } else {
             return Message.invalidMsg(con, "missed username or secret");
         }
+        loginOrNot.put(con, true);
         return false;
     }
 
@@ -347,25 +368,27 @@ public class Control extends Thread {
 
     private synchronized boolean onReceiveActivityMessage(Connection con, JSONObject request) {
         if (!request.containsKey("username")) {
-            return Message.authenticationFail(con, "the message did not contain a username");
+            return Message.invalidMsg(con, "the message did not contain a username");
         }
         if (!request.containsKey("secret")) {
-            return Message.authenticationFail(con, "the message did not contain a secret");
+            return Message.invalidMsg(con, "the message did not contain a secret");
+        }
+        if (!request.containsKey("activity")) {
+            return Message.invalidMsg(con, "the message did not contain an activity");
         }
         String activityUsername = (String) request.get("username");
         String activityPassword = (String) request.get("secret");
-        if (activityUsername.equals("anonymous")) {
-            if (activityUsername.equals(Settings.getUsername())) {
-                return broadcastActivity(con, (JSONObject) request.get("activity"));
-            }
-        } else {
-            if (!activityUsername.equals(Settings.getUsername())
-                    || !activityPassword.equals(Settings.getUserSecret())) {
-                return Message.authenticationFail(con, "the supplied secret is incorrect: " + activityPassword);
-            }
-            return broadcastActivity(con, (JSONObject) request.get("activity"));
+        JSONObject activityJson = (JSONObject) request.get("activity");
+        activityJson.put("authenticated_user", activityUsername);
+
+
+        // TODO still needs modification
+        if (!activityUsername.equals("anonymous") && !loginOrNot.containsKey(con)) {
+            return Message.authenticationFail(con, "the username and secret do not match the logged in the user, " +
+                    "or the user has not logged in yet");
         }
-        return true;
+
+        return broadcastActivity(con, activityJson);
     }
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
