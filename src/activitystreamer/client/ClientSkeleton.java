@@ -59,7 +59,6 @@ public class ClientSkeleton extends Thread {
     			jo.put("username", Settings.getUsername());
     			jo.put("secret", Settings.getUserSecret());
     			jo.put("activity", activityObj.get("activity"));
-    			System.out.println(jo.toJSONString());
     		//	{"activity":{"S":"S"}}
     			activityObj = jo;
     		}

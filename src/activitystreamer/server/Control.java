@@ -2,6 +2,7 @@ package activitystreamer.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.*;
 
 import activitystreamer.util.Message;
@@ -163,7 +164,6 @@ public class Control extends Thread {
             	userList.add(new User(username, secret));
 //            	addUser(con, username, secret);
             if (parentConnection != null || lChildConnection != null || rChildConnection != null) {
-                
                 if (parentConnection != null) {
                     Message.lockRequest(parentConnection, username, secret);
                 }
@@ -249,7 +249,8 @@ public class Control extends Thread {
                 Message.lockDenied(parentConnection, username, secret);
             }
         } else {
-            addUser(con, username, secret);
+//            	addUser(con, username, secret);
+        			userList.add(new User(username, secret));
             if (con.equals(parentConnection)) {
                 if (lChildConnection == null & rChildConnection == null) {
                     Message.lockAllowed(parentConnection, username, secret);
