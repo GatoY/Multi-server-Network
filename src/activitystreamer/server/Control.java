@@ -2,7 +2,6 @@ package activitystreamer.server;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.util.*;
 
 import activitystreamer.util.Message;
@@ -318,18 +317,24 @@ public class Control extends Thread {
     }
 
     private synchronized boolean login(Connection con, JSONObject request) {
-        if (request.containsKey("username") && request.containsKey("secret")) {
+        if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
+            Message.loginSuccess(con, "logged in as user " + true);
+            loginOrNot.put(con, true);
+            if (checkOtherLoads() != null) {
+                return Message.redirect(Objects.requireNonNull(checkOtherLoads()));
+            }
+            return false;
+        } else if (request.containsKey("username") && request.containsKey("secret")) { // username login
             String username = (String) request.get("username");
             String secret = (String) request.get("secret");
-
             boolean foundUser = false;
-
             for (User user : userList) {
                 if (user.getUserName().equals(username)) {
                     foundUser = true;
                     if (user.getPassword().equals(secret)) {
                         user.setLogin(true);
                         Message.loginSuccess(con, "logged in as user " + username);
+                        loginOrNot.put(con, true);
                         if (checkOtherLoads() != null) {
                             return Message.redirect(Objects.requireNonNull(checkOtherLoads()));
                         }
