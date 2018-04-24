@@ -21,7 +21,7 @@ public class ClientSkeleton extends Thread {
     private Socket socket;
     private DataOutputStream dos;
     private PrintWriter out;
-    DataInputStream dis;
+    private DataInputStream dis;
     private InputStreamReader isr;
     private BufferedReader br;
     private JSONParser jp;
@@ -36,6 +36,7 @@ public class ClientSkeleton extends Thread {
     public ClientSkeleton() {
         try {
             socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
+            System.out.println(Settings.getRemoteHostname() + " " + Settings.getRemotePort());
             jp = new JSONParser();
             dos = new DataOutputStream(socket.getOutputStream());
             out = new PrintWriter(dos, true);

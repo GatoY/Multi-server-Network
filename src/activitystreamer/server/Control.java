@@ -2,6 +2,7 @@ package activitystreamer.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.*;
 
 import activitystreamer.util.Message;
@@ -23,7 +24,7 @@ public class Control extends Thread {
     protected static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
     private static Map<Connection, Integer> loadMap = new HashMap<>();
-    private static List<User> clientList = new ArrayList<>(); // the registered users on THIS server
+    private static List<User> userList = new ArrayList<>(); // the registered users on THIS server
     private static Map<Connection, Boolean> loginOrNot = new HashMap<>();
 
     public static Control getInstance() {
@@ -107,7 +108,7 @@ public class Control extends Thread {
             case Message.ACTIVITY_MESSAGE:
                 return onReceiveActivityMessage(con, request);
             case Message.SERVER_ANNOUNCE:
-                onReceiveServerAnnounce(con, request);
+                return onReceiveServerAnnounce(con, request);
         }
         return true;
     }
@@ -124,17 +125,6 @@ public class Control extends Thread {
             return Message.invalidMsg(con, "the server has already successfully authenticated");
         }
         // No reply if the authentication succeeded.
-        if (lChildConnection == null) {
-            lChildConnection = con;
-        } else if (rChildConnection == null) {
-            rChildConnection = con;
-        }
-        // if from server, remove it from the client connections TODO
-        for (Connection c : clientConnections) {
-            if (c.getSocket() == con.getSocket()) {
-                clientConnections.remove(c);
-            }
-        }
         return false;
     }
 
@@ -154,29 +144,27 @@ public class Control extends Thread {
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
 
-        if (loginOrNot.containsKey(con)) {
+        if (isUserLoggedInLocally(con.getSocket().getLocalSocketAddress())) {
             Message.invalidMsg(con, "You have already logged in.");
             return true;
         }
 
         if (isUserRegisteredLocally(username)) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
+        } else if (parentConnection == null && lChildConnection == null && rChildConnection == null) {
+            addUser(con, username, secret);
+            return Message.registerSuccess(con, "register success for " + username);
         } else {
-            if (parentConnection != null || lChildConnection != null || rChildConnection != null) {
-                clientList.add(new User(username, secret));
-                if (parentConnection != null) {
-                    Message.lockRequest(parentConnection, username, secret);
-                }
-                if (lChildConnection != null) {
-                    Message.lockRequest(lChildConnection, username, secret);
-                }
-                if (rChildConnection != null) {
-                    Message.lockRequest(rChildConnection, username, secret);
-                }
-                return false;
-            } else {
-                return Message.registerSuccess(con, "register success for " + username);
+            if (parentConnection != null) {
+                Message.lockRequest(parentConnection, username, secret);
             }
+            if (lChildConnection != null) {
+                Message.lockRequest(lChildConnection, username, secret);
+            }
+            if (rChildConnection != null) {
+                Message.lockRequest(rChildConnection, username, secret);
+            }
+            return false;
         }
     }
 
@@ -207,9 +195,9 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        for (User user : clientList) {
+        for (User user : userList) {
             if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
-                clientList.remove(user);
+                userList.remove(user);
             }
         }
         if (con.equals(parentConnection)) {
@@ -234,9 +222,9 @@ public class Control extends Thread {
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
         if (isUserRegisteredLocally(username)) {
-            for (User user : clientList) {
+            for (User user : userList) {
                 if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
-                    clientList.remove(user);
+                    userList.remove(user);
                 }
             }
             if (lChildConnection != null) {
@@ -249,7 +237,7 @@ public class Control extends Thread {
                 Message.lockDenied(parentConnection, username, secret);
             }
         } else {
-            clientList.add(new User(username, secret));
+            addUser(con, username, secret);
             if (con.equals(parentConnection)) {
                 if (lChildConnection == null & rChildConnection == null) {
                     Message.lockAllowed(parentConnection, username, secret);
@@ -276,15 +264,14 @@ public class Control extends Thread {
 
     private void addUser(Connection con, String username, String secret) {
         User user = new User(username, secret);
-        user.setHostname(con.getSocket().getInetAddress().toString()); // TODO review
-        user.setPort(con.getSocket().getPort()); // TODO review
+        user.setLocalSocketAddress(con.getSocket().getLocalSocketAddress());
         user.setLogin(false);
-        clientList.add(user);
+        userList.add(user);
     }
 
     private boolean isUserRegisteredLocally(String username) {
         boolean flag = false;
-        for (User user : clientList) {
+        for (User user : userList) {
             if (user.getUserName().equals(username)) {
                 flag = true;
             }
@@ -292,17 +279,8 @@ public class Control extends Thread {
         return flag;
     }
 
-    private boolean isUserLoggedInLocally(String username) {
-        boolean flag = false;
-        for (User user : clientList) {
-            if (user.getUserName().equals(username) && user.isLogin()) {
-                flag = true;
-            }
-        }
-        return flag;
-    }
 
-    private void onReceiveServerAnnounce(Connection con, JSONObject request) {
+    private boolean onReceiveServerAnnounce(Connection con, JSONObject request) {
         loadMap.put(con, (Integer) request.get("load"));
         if (con != parentConnection) {
             parentConnection.writeMsg(request.toJSONString());
@@ -313,6 +291,7 @@ public class Control extends Thread {
         if (con != rChildConnection) {
             rChildConnection.writeMsg(request.toJSONString());
         }
+        return false;
 
     }
 
@@ -334,15 +313,16 @@ public class Control extends Thread {
 
             boolean foundUser = false;
 
-            for (User user : clientList) {
+            for (User user : userList) {
                 if (user.getUserName().equals(username)) {
                     foundUser = true;
                     if (user.getPassword().equals(secret)) {
                         user.setLogin(true);
+                        Message.loginSuccess(con, "logged in as user " + username);
                         if (checkOtherLoads() != null) {
-                            Message.redirect(Objects.requireNonNull(checkOtherLoads())); // TODO review
+                            return Message.redirect(Objects.requireNonNull(checkOtherLoads()));
                         }
-                        return Message.loginSuccess(con, "logged in as user " + username);
+                        return false;
                     }
                 }
             }
@@ -352,18 +332,42 @@ public class Control extends Thread {
         } else {
             return Message.invalidMsg(con, "missed username or secret");
         }
-        loginOrNot.put(con, true);
+//        loginOrNot.put(con, true);
         return false;
     }
 
     private synchronized boolean logout(Connection con) {
-        for (User user : clientList) {
-            if (user.getHostname().equals(con.getSocket().getInetAddress().toString())
-                    && user.getPort() == con.getSocket().getPort()) {
+        boolean logout = false;
+        for (User user : userList) {
+            if (user.getLocalSocketAddress().equals(con.getSocket().getLocalSocketAddress())) {
                 user.setLogin(false);
+                logout = true;
             }
         }
-        return true;
+        if (logout) {
+            con.closeCon();
+        }
+        return logout;
+    }
+
+    private boolean isUserLoggedInLocally(SocketAddress address) {
+        boolean flag = false;
+        for (User user : userList) {
+            if (user.getLocalSocketAddress().equals(address) && user.isLogin()) {
+                flag = true;
+            }
+        }
+        return flag;
+    }
+
+    private boolean isUserLoggedInLocally(String username, String secret) {
+        boolean flag = false;
+        for (User user : userList) {
+            if (user.getUserName().equals(username) && user.getPassword().equals(secret) && user.isLogin()) {
+                flag = true;
+            }
+        }
+        return flag;
     }
 
     private synchronized boolean onReceiveActivityMessage(Connection con, JSONObject request) {
@@ -376,20 +380,18 @@ public class Control extends Thread {
         if (!request.containsKey("activity")) {
             return Message.invalidMsg(con, "the message did not contain an activity");
         }
-        String activityUsername = (String) request.get("username");
-        String activityPassword = (String) request.get("secret");
-        JSONObject activityJson = (JSONObject) request.get("activity");
-        activityJson.put("authenticated_user", activityUsername);
+        String username = (String) request.get("username");
+        String secret = (String) request.get("secret");
+        JSONObject activity = (JSONObject) request.get("activity");
+        activity.put("authenticated_user", username);
 
-
-        // TODO still needs modification
-        if (!activityUsername.equals("anonymous") && !loginOrNot.containsKey(con)) {
+        if (!username.equals("anonymous") && !isUserLoggedInLocally(username, secret)) {
             return Message.authenticationFail(con, "the username and secret do not match the logged in the user, " +
                     "or the user has not logged in yet");
         }
-
-        return broadcastActivity(con, activityJson);
+        return broadcastActivity(con, activity);
     }
+
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
         for (Connection c : this.getClientConnections()) {
@@ -430,7 +432,17 @@ public class Control extends Thread {
     public synchronized Connection incomingConnection(Socket s) throws IOException {
         log.debug("incoming connection: " + Settings.socketAddress(s));
         Connection c = new Connection(s);
-        clientConnections.add(c);
+        if (s.getLocalPort() < 4000 && s.getLocalPort() > 3700) {
+            if (lChildConnection == null) {
+                lChildConnection = c;
+            } else if (rChildConnection == null) {
+                rChildConnection = c;
+            } else {
+                log.debug("the connection " + Settings.socketAddress(s) + " was refused");
+            }
+        } else {
+            clientConnections.add(c);
+        }
         return c;
     }
 

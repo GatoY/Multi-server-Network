@@ -122,6 +122,13 @@ public class Settings {
         Settings.serverSecret = serverSecret;
     }
 
+    public static boolean isRemoteAuthenticated() {
+        return remoteAuthenticated;
+    }
+
+    public static void setRemoteAuthenticated(boolean remoteAuthenticated) {
+        Settings.remoteAuthenticated = remoteAuthenticated;
+    }
 
     /*
      * some general helper functions
@@ -133,14 +140,6 @@ public class Settings {
 
     public static String nextSecret() {
         return new BigInteger(130, random).toString(32);
-    }
-
-    public static boolean isRemoteAuthenticated() {
-        return remoteAuthenticated;
-    }
-
-    public static void setRemoteAuthenticated(boolean remoteAuthenticated) {
-        Settings.remoteAuthenticated = remoteAuthenticated;
     }
 
 }
