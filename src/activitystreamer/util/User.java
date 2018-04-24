@@ -6,9 +6,15 @@ public class User {
     private SocketAddress localSocketAddress;
     private String userName;
     private String password;
-    private boolean isLogin;
+    private boolean isLogin = false;
 
     public User(String userName, String password) {
+        this.userName = userName;
+        this.password = password;
+    }
+
+    public User(SocketAddress socketAddress, String userName, String password) {
+        this.localSocketAddress = socketAddress;
         this.userName = userName;
         this.password = password;
     }
