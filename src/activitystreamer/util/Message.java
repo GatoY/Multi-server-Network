@@ -36,7 +36,7 @@ public class Message {
     public synchronized static void authenticate(Connection con) {
         JSONObject json = new JSONObject();
         json.put("command", Message.AUTHENTICATE);
-        json.put("secret", Settings.serverSecret);
+        json.put("secret", Settings.getServerSecret());
         con.writeMsg(json.toJSONString());
     }
 

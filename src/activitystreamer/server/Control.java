@@ -24,7 +24,7 @@ public class Control extends Thread {
     protected static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
     private static Map<Connection, Integer> loadMap = new HashMap<>();
-    private static List<User> userList = new ArrayList<>(); // the registered users on THIS server
+    private static List<User> userList = new ArrayList<>(); // the global registered users TODO
     private static Map<Connection, Boolean> loginOrNot = new HashMap<>();
 
     public static Control getInstance() {
@@ -118,13 +118,22 @@ public class Control extends Thread {
             return Message.invalidMsg(con, "the received message did not contain a secret");
         }
         String secret = (String) request.get("secret");
-        if (!secret.equals(Settings.serverSecret)) {
+        if (!secret.equals(Settings.getServerSecret())) {
             // if the secret is incorrect
             return Message.authenticationFail(con, "the supplied secret is incorrect: " + secret);
         } else if (lChildConnection == con || rChildConnection == con) {
             return Message.invalidMsg(con, "the server has already successfully authenticated");
         }
         // No reply if the authentication succeeded.
+        clientConnections.remove(con);
+        if (lChildConnection == null) {
+            lChildConnection = con;
+        } else if (rChildConnection == null) {
+            rChildConnection = con;
+        } else {
+            log.debug("the connection was refused");
+        }
+
         return false;
     }
 
@@ -144,27 +153,29 @@ public class Control extends Thread {
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
 
-        if (isUserLoggedInLocally(con.getSocket().getLocalSocketAddress())) {
+        if (loginOrNot.containsKey(con)) {
             Message.invalidMsg(con, "You have already logged in.");
             return true;
         }
 
         if (isUserRegisteredLocally(username)) {
             return Message.registerFailed(con, username + " is already registered with the system"); // true
-        } else if (parentConnection == null && lChildConnection == null && rChildConnection == null) {
-            addUser(con, username, secret);
-            return Message.registerSuccess(con, "register success for " + username);
         } else {
-            if (parentConnection != null) {
-                Message.lockRequest(parentConnection, username, secret);
+            if (parentConnection != null || lChildConnection != null || rChildConnection != null) {
+                userList.add(new User(username, secret));
+                if (parentConnection != null) {
+                    Message.lockRequest(parentConnection, username, secret);
+                }
+                if (lChildConnection != null) {
+                    Message.lockRequest(lChildConnection, username, secret);
+                }
+                if (rChildConnection != null) {
+                    Message.lockRequest(rChildConnection, username, secret);
+                }
+                return false;
+            } else {
+                return Message.registerSuccess(con, "register success for " + username);
             }
-            if (lChildConnection != null) {
-                Message.lockRequest(lChildConnection, username, secret);
-            }
-            if (rChildConnection != null) {
-                Message.lockRequest(rChildConnection, username, secret);
-            }
-            return false;
         }
     }
 
@@ -332,7 +343,7 @@ public class Control extends Thread {
         } else {
             return Message.invalidMsg(con, "missed username or secret");
         }
-//        loginOrNot.put(con, true);
+        loginOrNot.put(con, true);
         return false;
     }
 
@@ -348,16 +359,6 @@ public class Control extends Thread {
             con.closeCon();
         }
         return logout;
-    }
-
-    private boolean isUserLoggedInLocally(SocketAddress address) {
-        boolean flag = false;
-        for (User user : userList) {
-            if (user.getLocalSocketAddress().equals(address) && user.isLogin()) {
-                flag = true;
-            }
-        }
-        return flag;
     }
 
     private boolean isUserLoggedInLocally(String username, String secret) {
@@ -432,17 +433,7 @@ public class Control extends Thread {
     public synchronized Connection incomingConnection(Socket s) throws IOException {
         log.debug("incoming connection: " + Settings.socketAddress(s));
         Connection c = new Connection(s);
-        if (s.getLocalPort() < 4000 && s.getLocalPort() > 3700) {
-            if (lChildConnection == null) {
-                lChildConnection = c;
-            } else if (rChildConnection == null) {
-                rChildConnection = c;
-            } else {
-                log.debug("the connection " + Settings.socketAddress(s) + " was refused");
-            }
-        } else {
-            clientConnections.add(c);
-        }
+        clientConnections.add(c);
         return c;
     }
 

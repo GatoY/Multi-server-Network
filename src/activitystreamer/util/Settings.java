@@ -22,7 +22,7 @@ public class Settings {
     // -ms, serverIdLength
     private static int serverIdLength = 26;
     private static boolean remoteAuthenticated = false;
-    public static String serverSecret;
+    private static String serverSecret;
 
     //for client
     private static String userSecret = null;
