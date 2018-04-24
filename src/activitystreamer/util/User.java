@@ -1,8 +1,9 @@
 package activitystreamer.util;
 
+import java.net.SocketAddress;
+
 public class User {
-    private String hostname;
-    private int port;
+    private SocketAddress localSocketAddress;
     private String userName;
     private String password;
     private boolean isLogin;
@@ -12,20 +13,12 @@ public class User {
         this.password = password;
     }
 
-    public String getHostname() {
-        return hostname;
+    public SocketAddress getLocalSocketAddress() {
+        return localSocketAddress;
     }
 
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
+    public void setLocalSocketAddress(SocketAddress localSocketAddress) {
+        this.localSocketAddress = localSocketAddress;
     }
 
     public String getUserName() {
