@@ -8,10 +8,10 @@ public class User {
     private String password;
     private boolean isLogin = false;
 
-    public User(String userName, String password) {
-        this.userName = userName;
-        this.password = password;
-    }
+//    public User(String userName, String password) {
+//        this.userName = userName;
+//        this.password = password;
+//    }
 
     public User(SocketAddress socketAddress, String userName, String password) {
         this.localSocketAddress = socketAddress;

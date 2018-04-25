@@ -7,7 +7,6 @@ import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.omg.CORBA.FREE_MEM;
 
 import java.io.*;
 import java.net.Socket;

@@ -3,6 +3,7 @@ package activitystreamer.server;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import activitystreamer.util.Message;
 import activitystreamer.util.User;
@@ -22,9 +23,9 @@ public class Control extends Thread {
 
     protected static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
-    private static Map<Connection, Integer> loadMap = new HashMap<>();
+    private static Map<Connection, Integer> loadMap = new ConcurrentHashMap<>();
     private static List<User> userList = new ArrayList<>(); // the global registered users
-//    private static Map<Connection, Boolean> loginOrNot = new HashMap<>();
+//    private static Map<Connection, Boolean> loginOrNot = new ConcurrentHashMap<>();
 
     public static Control getInstance() {
         if (control == null) {
@@ -113,7 +114,7 @@ public class Control extends Thread {
         return true;
     }
 
-    private synchronized boolean authenticateIncomingConnection(Connection con, JSONObject request) {
+    private boolean authenticateIncomingConnection(Connection con, JSONObject request) {
         if (request.get("secret") == null) {
             return Message.invalidMsg(con, "the received message did not contain a secret");
         }
@@ -131,13 +132,13 @@ public class Control extends Thread {
         } else if (rChildConnection == null) {
             rChildConnection = con;
         } else {
-//        		socket require closing
+//        	TODO	socket require closing
             log.debug("the connection was refused");
         }
         return false;
     }
 
-    private synchronized boolean authenticationFail() {
+    private boolean authenticationFail() {
         if (parentConnection != null && parentConnection.isOpen()) {
             parentConnection.closeCon();
             parentConnection = null;
@@ -145,7 +146,7 @@ public class Control extends Thread {
         return true;
     }
 
-    private synchronized boolean register(Connection con, JSONObject request) {
+    private boolean register(Connection con, JSONObject request) {
         // INVALID_MESSAGE - if anything is incorrect about the message,
         if (!request.containsKey("username") || !request.containsKey("secret")) {
             Message.invalidMsg(con, "The message is incorrect");
@@ -324,7 +325,7 @@ public class Control extends Thread {
         return null;
     }
 
-    private synchronized boolean login(Connection con, JSONObject request) {
+    private boolean login(Connection con, JSONObject request) {
         if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
             Message.loginSuccess(con, "logged in as user " + true);
 //            loginOrNot.put(con, true);
@@ -360,7 +361,7 @@ public class Control extends Thread {
         return false;
     }
 
-    private synchronized boolean logout(Connection con) {
+    private boolean logout(Connection con) {
         boolean logout = false;
         for (User user : userList) {
             if (user.getLocalSocketAddress().equals(con.getSocket().getLocalSocketAddress())) {
@@ -384,7 +385,7 @@ public class Control extends Thread {
         return flag;
     }
 
-    private synchronized boolean onReceiveActivityMessage(Connection con, JSONObject request) {
+    private boolean onReceiveActivityMessage(Connection con, JSONObject request) {
         if (!request.containsKey("username")) {
             return Message.invalidMsg(con, "the message did not contain a username");
         }
