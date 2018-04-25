@@ -190,7 +190,6 @@ public class Control extends Thread {
 
 			addUser(con, username, secret);
 			if (parentConnection != null) {
-				System.out.println("send to parent");
 				Message.lockRequest(parentConnection, username, secret);
 			}
 			if (lChildConnection != null) {
@@ -208,7 +207,6 @@ public class Control extends Thread {
 		if (!con.equals(parentConnection) && !con.equals(lChildConnection) && !con.equals(rChildConnection)) {
 			return Message.invalidMsg(con, "The connection has not authenticated");
 		}
-		System.out.println("get onlock");
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
 		if (con.equals(parentConnection)) { // if from parent:
@@ -237,13 +235,8 @@ public class Control extends Thread {
 						flags[2] = "1";
 					}
 					validateMap.put(temCon, flags);
-					for (String i : flags) {
-						System.out.println(i);
-					}
-
 					if (flags[0].equals(serverIdList[0]) & flags[1].equals(serverIdList[2])
 							& flags[2].equals(serverIdList[2])) {
-						System.out.println("success for register");
 						validateMap.remove(temCon);
 						registerMap.remove(temCon);
 						Message.registerSuccess(temCon, "register success for " + username);
@@ -285,7 +278,6 @@ public class Control extends Thread {
 		if (!con.equals(parentConnection) && !con.equals(lChildConnection) && !con.equals(rChildConnection)) {
 			return Message.invalidMsg(con, "The connection has not authenticated");
 		}
-		System.out.println("request");
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
 		if (isUserRegistered(username)) { // almost useless
@@ -318,7 +310,6 @@ public class Control extends Thread {
 				}
 			} else { // if from child
 				if (parentConnection != null) {
-					System.out.println("315 ```````````````");
 					Message.lockRequest(parentConnection, username, secret);
 				} else {
 					if (lChildConnection != null) {
