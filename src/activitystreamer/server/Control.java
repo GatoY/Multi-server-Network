@@ -25,7 +25,7 @@ public class Control extends Thread {
     private static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
     private static Map<Connection, Integer> loadMap = new ConcurrentHashMap<>();
-    private static List<User> userList = new ArrayList<>(); // the global registered users
+    private static List<User> userList; // the global registered users
     private static Vector<SocketAddress> loginVector = new Vector<>();
 
     public static Control getInstance() {
@@ -38,6 +38,7 @@ public class Control extends Thread {
     private Control() {
         // initialize the clientConnections array
         clientConnections = Collections.synchronizedList(new ArrayList<>());
+        userList = Collections.synchronizedList(new ArrayList<>());
         // start a listener
         try {
             listener = new Listener();
@@ -184,6 +185,7 @@ public class Control extends Thread {
                 Message.lockRequest(rChildConnection, username, secret);
             }
             // TODO return SUCCESS or FAIL
+
             return false;
         }
     }
