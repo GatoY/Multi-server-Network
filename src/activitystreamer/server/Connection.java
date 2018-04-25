@@ -22,6 +22,7 @@ public class Connection extends Thread {
     private boolean open = false;
     private Socket socket;
     private boolean term = false;
+    private boolean isServer;
 
     Connection(Socket socket) throws IOException {
         dis = new DataInputStream(socket.getInputStream());
