@@ -33,7 +33,7 @@ public class TextFrame extends JFrame implements ActionListener {
     private JButton sendButton;
     private JButton disconnectButton;
     private JSONParser parser = new JSONParser();
-    StringBuffer outputMSG;
+    private StringBuffer outputMSG;
 
     public TextFrame() {
     		outputMSG = new StringBuffer();
