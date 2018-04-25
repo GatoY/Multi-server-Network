@@ -3,8 +3,6 @@ package activitystreamer.util;
 import activitystreamer.server.Connection;
 import org.json.simple.JSONObject;
 
-import java.net.Socket;
-
 public class Message {
     public static final String AUTHENTICATE = "AUTHENTICATE";
     public static final String INVALID_MESSAGE = "INVALID_MESSAGE";

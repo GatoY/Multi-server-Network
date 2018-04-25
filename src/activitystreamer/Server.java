@@ -94,6 +94,9 @@ public class Server {
 
         if (cmd.hasOption("s")) {
             Settings.setServerSecret(cmd.getOptionValue("s"));
+            if (!cmd.hasOption("rh") && !cmd.hasOption("rp")) {
+                System.out.println("server secret: " + cmd.getOptionValue("s"));
+            }
         }
         // yu- set server id.
         Settings.setServerId();
