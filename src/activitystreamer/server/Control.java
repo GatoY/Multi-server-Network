@@ -30,7 +30,8 @@ public class Control extends Thread {
 	private static Map<Connection, String[]> validateMap = new ConcurrentHashMap<>();
 	private static Map<Connection, String> registerMap = new ConcurrentHashMap<>();
 	// list to record if of cooperated servers;
-	String[] serverIdList = {"0","0","0"};
+	String[] serverIdList = { "0", "0", "0" };
+
 	public static Control getInstance() {
 		if (control == null) {
 			control = new Control();
@@ -186,7 +187,7 @@ public class Control extends Thread {
 			String[] validatedList = { "0", "0", "0" };
 			validateMap.put(con, validatedList);
 			registerMap.put(con, username);
-			
+
 			addUser(con, username, secret);
 			if (parentConnection != null) {
 				System.out.println("send to parent");
@@ -240,7 +241,8 @@ public class Control extends Thread {
 						System.out.println(i);
 					}
 
-					if (flags[0].equals(serverIdList[0]) & flags[1].equals(serverIdList[2]) & flags[2].equals(serverIdList[2])) {
+					if (flags[0].equals(serverIdList[0]) & flags[1].equals(serverIdList[2])
+							& flags[2].equals(serverIdList[2])) {
 						System.out.println("success for register");
 						validateMap.remove(temCon);
 						registerMap.remove(temCon);
@@ -362,7 +364,7 @@ public class Control extends Thread {
 		if (rChildConnection != null && con != rChildConnection) {
 			rChildConnection.writeMsg(request.toJSONString());
 		}
-		
+
 		if (con.equals(parentConnection)) {
 			serverIdList[0] = "1";
 		}
@@ -573,5 +575,4 @@ public class Control extends Thread {
 	public final void setTerm(boolean t) {
 		term = t;
 	}
-
 }
