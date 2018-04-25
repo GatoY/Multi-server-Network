@@ -17,23 +17,23 @@ public class Settings {
     private static String remoteHostname = null;
     private static int remotePort = 3780;
     private static int activityInterval = 5000; // milliseconds
-    // -yu, server id.
+    //server id.
     private static String serverId;
-    // -ms, serverIdLength
+    //serverIdLength
     private static int serverIdLength = 26;
     private static boolean remoteAuthenticated = false;
-    private static String serverSecret;
+    private static String serverSecret="1";
 
     //for client
     private static String userSecret = null;
     private static String username = "anonymous";
 
-    // -ms set server id.
+    //set server id.
     public static void setServerId() {
         serverId = genRandomString();
     }
 
-    // -lun generate random String -- made by Mason
+    //generate random String
     public static String genRandomString() {
         String range = "0123456789abcdefghijklmnopqrstuvwxyz";
         Random rd = new Random();
@@ -45,7 +45,7 @@ public class Settings {
         return randomId.toString();
     }
 
-    // -yu get server id.
+    //get server id.
     public static String getServerId() {
         return serverId;
     }
