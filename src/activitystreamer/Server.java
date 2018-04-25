@@ -17,7 +17,7 @@ import activitystreamer.util.Settings;
 
 public class Server {
     private static final Logger log = LogManager.getLogger();
-
+    
     private static void help(Options options) {
         String header = "An ActivityStream Server for Unimelb COMP90015\n\n";
         String footer = "\ncontact aharwood@unimelb.edu.au for issues.";
@@ -25,11 +25,11 @@ public class Server {
         formatter.printHelp("ActivityStreamer.Server", header, options, footer, true);
         System.exit(-1);
     }
-
+    
     public static void main(String[] args) {
-
+        
         log.info("reading command line options");
-
+        
         Options options = new Options();
         options.addOption("lh", true, "local hostname");
         options.addOption("lp", true, "local port number");
@@ -37,17 +37,17 @@ public class Server {
         options.addOption("rh", true, "remote hostname");
         options.addOption("a", true, "activity interval in milliseconds");
         options.addOption("s", true, "secret for the server to use");
-
+        
         // build the parser
         CommandLineParser parser = new DefaultParser();
-
+        
         CommandLine cmd = null;
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e1) {
             help(options);
         }
-
+        
         if (cmd.hasOption("lp")) {
             try {
                 int port = Integer.parseInt(cmd.getOptionValue("lp"));
@@ -57,11 +57,11 @@ public class Server {
                 help(options);
             }
         }
-
+        
         if (cmd.hasOption("rh")) {
             Settings.setRemoteHostname(cmd.getOptionValue("rh"));
         }
-
+        
         if (cmd.hasOption("rp")) {
             try {
                 int port = Integer.parseInt(cmd.getOptionValue("rp"));
@@ -71,7 +71,7 @@ public class Server {
                 help(options);
             }
         }
-
+        
         if (cmd.hasOption("a")) {
             try {
                 int a = Integer.parseInt(cmd.getOptionValue("a"));
@@ -81,27 +81,30 @@ public class Server {
                 help(options);
             }
         }
-
+        
         try {
             Settings.setLocalHostname(InetAddress.getLocalHost().getHostAddress());
         } catch (UnknownHostException e) {
             log.warn("failed to get localhost IP address");
         }
-
+        
         if (cmd.hasOption("lh")) {
             Settings.setLocalHostname(cmd.getOptionValue("lh"));
         }
-
+        
         if (cmd.hasOption("s")) {
             Settings.setServerSecret(cmd.getOptionValue("s"));
+            if (!cmd.hasOption("rh") && !cmd.hasOption("rp")) {
+                System.out.println("server secret: " + cmd.getOptionValue("s"));
+            }
         }
         // yu- set server id.
         Settings.setServerId();
-
+        
         log.info("starting server");
-
+        
         final Control c = Control.getInstance();
-
+        
         c.initiateConnection();
         // the following shutdown hook doesn't really work, it doesn't give us enough
         // time to
@@ -113,5 +116,5 @@ public class Server {
             }
         });
     }
-
+    
 }
