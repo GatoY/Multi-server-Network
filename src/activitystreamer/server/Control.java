@@ -27,6 +27,10 @@ public class Control extends Thread {
     private static Map<Connection, Integer> loadMap = new ConcurrentHashMap<>();
     private static List<User> userList; // the global registered users
     private static Vector<SocketAddress> loginVector = new Vector<>();
+    private static Map<Connection, String[]> idMap = new ConcurrentHashMap<>();
+    private static Map<Connection, String> registerMap = new ConcurrentHashMap<>();
+    // list to record if of cooperated servers;
+    private static String[] serverIdList = new String[3];
 
     public static Control getInstance() {
         if (control == null) {
@@ -101,8 +105,11 @@ public class Control extends Thread {
                 if (onLockAllowed(con, request)) {
                     return true;
                 }
-                addUser(con, (String) request.get("username"), (String) request.get("secret"));
-                return Message.registerSuccess(con, "register success for " + request.get("username"));
+                // addUser(con, (String) request.get("username"), (String)
+                // request.get("secret"));
+                // return Message.registerSuccess(con, "register success for " +
+                // request.get("username"));
+                return false;
             case Message.LOGIN:
                 return login(con, request);
             case Message.LOGOUT:
@@ -133,7 +140,7 @@ public class Control extends Thread {
         } else if (rChildConnection == null) {
             rChildConnection = con;
         } else {
-//        socket require closing
+            // socket require closing
             con.closeCon();
             log.debug("the connection was refused");
         }
@@ -154,7 +161,8 @@ public class Control extends Thread {
             Message.invalidMsg(con, "The message is incorrect");
             return true;
         }
-        // INVALID_MESSAGE - if receiving a REGISTER message from a client that has already logged in on this connection.
+        // INVALID_MESSAGE - if receiving a REGISTER message from a client that has
+        // already logged in on this connection.
         for (User user : userList) {
             if (isUserLoggedIn(user, con)) {
                 Message.invalidMsg(con, "You have already logged in.");
@@ -174,6 +182,9 @@ public class Control extends Thread {
                 return Message.registerSuccess(con, "register success for " + username);
             }
         } else { // If there're multiple servers in the system
+            String[] serverIdList = {"0", "0", "0"};
+            idMap.put(con, serverIdList);
+            registerMap.put(con, username);
             addUser(con, username, secret);
             if (parentConnection != null) {
                 Message.lockRequest(parentConnection, username, secret);
@@ -184,8 +195,6 @@ public class Control extends Thread {
             if (rChildConnection != null) {
                 Message.lockRequest(rChildConnection, username, secret);
             }
-            // TODO return SUCCESS or FAIL
-
             return false;
         }
     }
@@ -206,6 +215,29 @@ public class Control extends Thread {
         } else { // if from children:
             if (parentConnection != null) {
                 Message.lockAllowed(parentConnection, username, secret); // send to parent
+            }
+        }
+        String[] label = {"1", "1", "1"};
+        for (Connection temCon : clientConnections) {
+            if (registerMap.containsKey(temCon)) {
+                if (registerMap.get(temCon).equals(username)) {
+                    String[] flags = idMap.get(temCon);
+                    if (con.equals(parentConnection)) {
+                        flags[0] = "1";
+                    }
+                    if (con.equals(lChildConnection)) {
+                        flags[1] = "1";
+                    }
+                    if (con.equals(rChildConnection)) {
+                        flags[2] = "1";
+                    }
+                    if (flags.equals(label)) {
+                        idMap.remove(temCon);
+                        registerMap.remove(temCon);
+                        Message.registerSuccess(temCon, "register success for " + username);
+                    }
+                    return false;
+                }
             }
         }
         return false;
@@ -303,7 +335,6 @@ public class Control extends Thread {
                 && loginVector.contains(user.getLocalSocketAddress());
     }
 
-
     private boolean onReceiveServerAnnounce(Connection con, JSONObject request) {
         loadMap.put(con, ((Long) request.get("load")).intValue());
         if (parentConnection != null && con != parentConnection) {
@@ -314,6 +345,18 @@ public class Control extends Thread {
         }
         if (rChildConnection != null && con != rChildConnection) {
             rChildConnection.writeMsg(request.toJSONString());
+        }
+        // if (!idMap.containsKey(con)) {
+        // idMap.put(con, (String) request.get("id"));
+        // }
+        if (con.equals(parentConnection)) {
+            serverIdList[0] = (String) request.get("id");
+        }
+        if (con.equals(rChildConnection)) {
+            serverIdList[1] = (String) request.get("id");
+        }
+        if (con.equals(lChildConnection)) {
+            serverIdList[1] = (String) request.get("id");
         }
         return false;
 
@@ -330,7 +373,7 @@ public class Control extends Thread {
 
     private boolean login(Connection con, JSONObject request) {
         if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
-            Message.loginSuccess(con, "logged in as user " + true);
+            Message.loginSuccess(con, "logged in as user " + request.get("username"));
             loginVector.add(con.getSocket().getRemoteSocketAddress());
             if (checkOtherLoads() != null) {
                 return Message.redirect(Objects.requireNonNull(checkOtherLoads()));
@@ -405,12 +448,11 @@ public class Control extends Thread {
         activity.put("authenticated_user", username);
 
         if (!username.equals("anonymous") && !isUserLoggedInLocally(username, secret)) {
-            return Message.authenticationFail(con, "the username and secret do not match the logged in the user, " +
-                    "or the user has not logged in yet");
+            return Message.authenticationFail(con, "the username and secret do not match the logged in the user, "
+                    + "or the user has not logged in yet");
         }
         return broadcastActivity(con, activity);
     }
-
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
         for (Connection c : clientConnections) {
