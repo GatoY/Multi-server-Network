@@ -2,6 +2,7 @@ package activitystreamer.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,11 +22,11 @@ public class Control extends Thread {
     private static boolean term = false;
     private static Listener listener;
 
-    protected static Control control = null;
+    private static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
     private static Map<Connection, Integer> loadMap = new ConcurrentHashMap<>();
     private static List<User> userList = new ArrayList<>(); // the global registered users
-//    private static Map<Connection, Boolean> loginOrNot = new ConcurrentHashMap<>();
+    private static Vector<SocketAddress> loginVector = new Vector<>();
 
     public static Control getInstance() {
         if (control == null) {
@@ -44,8 +45,7 @@ public class Control extends Thread {
             log.fatal("failed to startup a listening thread: " + e1);
             System.exit(-1);
         }
-        //注释 for test
-//        start();
+        start();
     }
 
     public void initiateConnection() {
@@ -132,7 +132,8 @@ public class Control extends Thread {
         } else if (rChildConnection == null) {
             rChildConnection = con;
         } else {
-//        	TODO	socket require closing
+//        socket require closing
+            con.closeCon();
             log.debug("the connection was refused");
         }
         return false;
@@ -282,7 +283,7 @@ public class Control extends Thread {
 
     private void addUser(Connection con, String username, String secret) {
         User user = new User(con.getSocket().getRemoteSocketAddress(), username, secret);
-        user.setLogin(false);
+//        user.setLogin(false);
         userList.add(user);
     }
 
@@ -297,7 +298,8 @@ public class Control extends Thread {
     }
 
     private boolean isUserLoggedIn(User user, Connection con) {
-        return user.getLocalSocketAddress().equals(con.getSocket().getRemoteSocketAddress()) && user.isLogin();
+        return user.getLocalSocketAddress().equals(con.getSocket().getRemoteSocketAddress())
+                && loginVector.contains(user.getLocalSocketAddress());
     }
 
 
@@ -328,7 +330,7 @@ public class Control extends Thread {
     private boolean login(Connection con, JSONObject request) {
         if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
             Message.loginSuccess(con, "logged in as user " + true);
-//            loginOrNot.put(con, true);
+            loginVector.add(con.getSocket().getRemoteSocketAddress());
             if (checkOtherLoads() != null) {
                 return Message.redirect(Objects.requireNonNull(checkOtherLoads()));
             }
@@ -341,9 +343,8 @@ public class Control extends Thread {
                 if (user.getUserName().equals(username)) {
                     foundUser = true;
                     if (user.getPassword().equals(secret)) {
-                        user.setLogin(true);
                         Message.loginSuccess(con, "logged in as user " + username);
-//                        loginOrNot.put(con, true);
+                        loginVector.add(user.getLocalSocketAddress());
                         if (checkOtherLoads() != null) {
                             return Message.redirect(Objects.requireNonNull(checkOtherLoads()));
                         }
@@ -357,15 +358,15 @@ public class Control extends Thread {
         } else {
             return Message.invalidMsg(con, "missed username or secret");
         }
-//        loginOrNot.put(con, true);
+        loginVector.add(con.getSocket().getRemoteSocketAddress());
         return false;
     }
 
     private boolean logout(Connection con) {
         boolean logout = false;
         for (User user : userList) {
-            if (user.getLocalSocketAddress().equals(con.getSocket().getLocalSocketAddress())) {
-                user.setLogin(false);
+            if (user.getLocalSocketAddress().equals(con.getSocket().getRemoteSocketAddress())) {
+                loginVector.remove(con.getSocket().getRemoteSocketAddress());
                 logout = true;
             }
         }
@@ -378,7 +379,8 @@ public class Control extends Thread {
     private boolean isUserLoggedInLocally(String username, String secret) {
         boolean flag = false;
         for (User user : userList) {
-            if (user.getUserName().equals(username) && user.getPassword().equals(secret) && user.isLogin()) {
+            if (user.getUserName().equals(username) && user.getPassword().equals(secret)
+                    && loginVector.contains(user.getLocalSocketAddress())) {
                 flag = true;
             }
         }
@@ -488,29 +490,20 @@ public class Control extends Thread {
                 log.info("received an interrupt, system is shutting down");
                 break;
             }
-//            if (!term) {
-//                log.debug("doing activity");
-//                term = doActivity();
-//            }
         }
-        log.info("closing " + clientConnections.size() + " client connections");
-        // clean up
-        for (Connection connection : clientConnections) {
-            connection.closeCon();
+        synchronized (clientConnections) {
+            log.info("closing " + clientConnections.size() + " client connections");
+            // clean up
+            for (Connection connection : clientConnections) {
+                connection.closeCon();
+            }
         }
+
         listener.setTerm(true);
     }
-
-//    public boolean doActivity() {
-//        return false;
-//    }
 
     public final void setTerm(boolean t) {
         term = t;
     }
-
-//    public final List<Connection> getClientConnections() {
-//        return clientConnections;
-//    }
 
 }

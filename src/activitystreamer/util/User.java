@@ -6,7 +6,7 @@ public class User {
     private SocketAddress localSocketAddress;
     private String userName;
     private String password;
-    private boolean isLogin = false;
+//    private boolean isLogin = false;
 
 //    public User(String userName, String password) {
 //        this.userName = userName;
@@ -43,11 +43,11 @@ public class User {
         this.password = password;
     }
 
-    public boolean isLogin() {
-        return isLogin;
-    }
-
-    public void setLogin(boolean login) {
-        isLogin = login;
-    }
+//    public boolean isLogin() {
+//        return isLogin;
+//    }
+//
+//    public void setLogin(boolean login) {
+//        isLogin = login;
+//    }
 }
