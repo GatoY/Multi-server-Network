@@ -166,5 +166,3 @@ public class ClientSkeleton extends Thread {
 
     }
 }
-
-

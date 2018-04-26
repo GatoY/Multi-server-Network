@@ -98,7 +98,7 @@ public class Server {
 				System.out.println("server secret: " + cmd.getOptionValue("s"));
 			}
 		}
-		//set server id.
+		// set server id.
 		Settings.setServerId();
 
 		log.info("starting server");
