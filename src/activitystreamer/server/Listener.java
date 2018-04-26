@@ -40,7 +40,7 @@ public class Listener extends Thread {
         this.term = term;
         if (term) {
             interrupt();
-        }
-    }
+		}
+	}
 
 }
