@@ -1,0 +1,18 @@
+local server:
+	-lp 3780 -s 123456
+	-lp 3781 -s 123456 -rh localhost -rp 3780
+	-lp 3782 -s 123456 -rh localhost -rp 3780
+
+local client anonymous:
+	-rh localhost -rp 3780
+
+local client register:
+	-rh localhost -rp 3780 -u mason
+
+Aaron's server : server conn test:
+	-lp 3780 -s gen1p85md2qnq0d59qll3fbcoa -rh sunrise.cis.unimelb.edu.au -rp 3781
+
+Aaron's server : client test:
+	-rh sunrise.cis.unimelb.edu.au -rp 3780 -m mason
+
+
