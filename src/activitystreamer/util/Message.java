@@ -89,6 +89,7 @@ public class Message {
 		json.put("command", Message.REGISTER_FAILED);
 		json.put("info", info);
 		con.writeMsg(json.toJSONString());
+		System.out.println("register failed so I closed");
 		return true;
 	}
 
@@ -154,7 +155,7 @@ public class Message {
 		json.put("command", Message.LOGIN_FAILED);
 		json.put("info", info);
 		con.writeMsg(json.toJSONString());
-		return false;
+		return true;
 	}
 
 	public synchronized static boolean logout(Connection con) {
