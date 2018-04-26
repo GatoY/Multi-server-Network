@@ -11,9 +11,6 @@ local client register:
 	-rh localhost -rp 3780 -u mason
 
 
-
-
-
 Aaron's server : server conn test:
 	-lp 3780 -s gen1p85md2qnq0d59qll3fbcoa -rh sunrise.cis.unimelb.edu.au -rp 3781
 

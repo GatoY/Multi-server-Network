@@ -583,6 +583,6 @@ public class Control extends Thread {
 	}
 
 	public final void setTerm(boolean t) {
-		term = t;
-	}
+        term = t;
+    }
 }
