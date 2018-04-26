@@ -36,7 +36,6 @@ public class ClientSkeleton extends Thread {
     public ClientSkeleton() {
         try {
             socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
-            System.out.println("00000000000000000000000000000000000000000000000000");
             System.out.println(Settings.getRemoteHostname() + " " + Settings.getRemotePort());
             jp = new JSONParser();
             dos = new DataOutputStream(socket.getOutputStream());
