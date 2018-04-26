@@ -24,7 +24,7 @@ public class Control extends Thread {
 
     private static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
-    private static Map<Connection, Integer> loadMap = new ConcurrentHashMap<>();
+    private static Map<String, Integer> loadMap = new ConcurrentHashMap<>();
     private static List<User> userList; // the global registered users
     private static Vector<SocketAddress> loginVector = new Vector<>();
     private static Map<Connection, String[]> validateMap = new ConcurrentHashMap<>();
@@ -371,7 +371,8 @@ public class Control extends Thread {
     }
 
     private boolean onReceiveServerAnnounce(Connection con, JSONObject request) {
-        loadMap.put(con, ((Long) request.get("load")).intValue());
+//        loadMap.put(con, ((Long) request.get("load")).intValue());
+        loadMap.put(request.get("hostname") + ":" + request.get("port"), ((Long) request.get("load")).intValue());
         if (parentConnection != null && con != parentConnection) {
             parentConnection.writeMsg(request.toJSONString());
         }
@@ -395,10 +396,8 @@ public class Control extends Thread {
 
     }
 
-    private Connection checkOtherLoads() {
-        for (Map.Entry<Connection, Integer> entry : loadMap.entrySet()) {
-            // Hey! Here's bug! Plz fix it.
-            // if (clientConnections.size() - entry.getValue() >= 2) {
+    private String checkOtherLoads() {
+        for (Map.Entry<String, Integer> entry : loadMap.entrySet()) {
             if (clientConnections.size() - entry.getValue() >= 2) {
                 System.out.println("return get key");
                 return entry.getKey();
@@ -413,7 +412,7 @@ public class Control extends Thread {
             loginVector.add(con.getSocket().getRemoteSocketAddress());
             if (checkOtherLoads() != null) {
                 //return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
-                return Message.redirect(con, Objects.requireNonNull(checkOtherLoads()));
+                return Message.redirect(con, checkOtherLoads());
             }
             return false;
         } else if (request.containsKey("username") && request.containsKey("secret")) { // username login
