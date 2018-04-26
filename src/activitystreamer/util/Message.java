@@ -1,6 +1,9 @@
 package activitystreamer.util;
 
 import activitystreamer.server.Connection;
+
+import java.net.InetAddress;
+
 import org.json.simple.JSONObject;
 
 public class Message {
@@ -27,6 +30,7 @@ public class Message {
 		json.put("command", Message.INVALID_MESSAGE);
 		json.put("info", info);
 		con.writeMsg(json.toJSONString());
+		System.out.println("invalid msg so I closed");
 		con.closeCon();
 		return true;
 	}
@@ -43,6 +47,7 @@ public class Message {
 		json.put("command", Message.AUTHENTICATION_FAIL);
 		json.put("info", info);
 		con.writeMsg(json.toJSONString());
+		System.out.println("authenticationFail so I closed");
 		con.closeCon();
 		return true;
 	}
@@ -89,6 +94,7 @@ public class Message {
 		json.put("command", Message.REGISTER_FAILED);
 		json.put("info", info);
 		con.writeMsg(json.toJSONString());
+		System.out.println("register failed so I closed");
 		return true;
 	}
 
@@ -154,22 +160,26 @@ public class Message {
 		json.put("command", Message.LOGIN_FAILED);
 		json.put("info", info);
 		con.writeMsg(json.toJSONString());
-		return false;
+		return true;
 	}
 
 	public synchronized static boolean logout(Connection con) {
 		JSONObject json = new JSONObject();
 		json.put("command", Message.LOGOUT);
 		con.writeMsg(json.toJSONString());
+		System.out.println("logout so I closed");
 		return true;
 	}
 
-	public synchronized static boolean redirect(Connection con) {
+	public synchronized static boolean redirect(Connection con, Connection serverCon) {
 		JSONObject json = new JSONObject();
 		json.put("command", Message.REDIRECT);
-		json.put("hostname", con.getSocket().getInetAddress());
-		json.put("port", con.getSocket().getPort());
+		InetAddress addy = serverCon.getSocket().getInetAddress();
+		String remoteIp = addy.getHostAddress();
+		json.put("hostname", remoteIp);
+		json.put("port", serverCon.getSocket().getPort());
 		con.writeMsg(json.toJSONString());
+		System.out.println("redirect so I closed");
 		con.closeCon();
 		return true;
 	}

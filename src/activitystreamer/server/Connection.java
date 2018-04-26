@@ -48,7 +48,7 @@ public class Connection extends Thread {
 
     public void closeCon() {
         if (open) {
-            log.info("closing connection " + Settings.socketAddress(socket));
+            log.info("closing connection by closeCon" + Settings.socketAddress(socket));
             try {
                 term = true;
                 br.close();
