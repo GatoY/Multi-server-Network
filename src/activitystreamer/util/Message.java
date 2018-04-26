@@ -164,6 +164,7 @@ public class Message {
 		JSONObject json = new JSONObject();
 		json.put("command", Message.LOGOUT);
 		con.writeMsg(json.toJSONString());
+		System.out.println("logout so I closed");
 		return true;
 	}
 
