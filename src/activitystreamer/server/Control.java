@@ -24,13 +24,13 @@ public class Control extends Thread {
 
     private static Control control = null;
     private static Connection parentConnection, lChildConnection, rChildConnection;
-    private static Map<Connection, Integer> loadMap = new ConcurrentHashMap<>();
+    private static Map<String, Integer> loadMap = new ConcurrentHashMap<>();
     private static List<User> userList; // the global registered users
     private static Vector<SocketAddress> loginVector = new Vector<>();
     private static Map<Connection, String[]> validateMap = new ConcurrentHashMap<>();
     private static Map<Connection, String> registerMap = new ConcurrentHashMap<>();
     // list to record if of cooperated servers;
-    String[] serverIdList = {"0", "0", "0"};
+    private String[] serverIdList = {"0", "0", "0"};
 
     public static Control getInstance() {
         if (control == null) {
@@ -79,7 +79,7 @@ public class Control extends Thread {
     public synchronized boolean process(Connection con, String msg) {
         JSONObject request;
         try {
-            System.out.println(msg);
+//            System.out.println(msg);
             request = (JSONObject) new JSONParser().parse(msg);
         } catch (Exception e) {
             System.out.println("the received message is not in valid format");
@@ -371,7 +371,8 @@ public class Control extends Thread {
     }
 
     private boolean onReceiveServerAnnounce(Connection con, JSONObject request) {
-        loadMap.put(con, ((Long) request.get("load")).intValue());
+//        loadMap.put(con, ((Long) request.get("load")).intValue());
+        loadMap.put(request.get("hostname") + ":" + request.get("port"), ((Long) request.get("load")).intValue());
         if (parentConnection != null && con != parentConnection) {
             parentConnection.writeMsg(request.toJSONString());
         }
@@ -395,12 +396,8 @@ public class Control extends Thread {
 
     }
 
-    private Connection checkOtherLoads(Connection con) {
-        for (Map.Entry<Connection, Integer> entry : loadMap.entrySet()) {
-            // Hey! Here's bug! Plz fix it.
-            // if (clientConnections.size() - entry.getValue() >= 2) {
-            System.out.println(clientConnections.size());
-            System.out.println(entry.getValue());
+    private String checkOtherLoads() {
+        for (Map.Entry<String, Integer> entry : loadMap.entrySet()) {
             if (clientConnections.size() - entry.getValue() >= 2) {
                 System.out.println("return get key");
                 return entry.getKey();
@@ -413,9 +410,9 @@ public class Control extends Thread {
         if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
             Message.loginSuccess(con, "logged in as user " + true);
             loginVector.add(con.getSocket().getRemoteSocketAddress());
-            if (checkOtherLoads(con) != null) {
+            if (checkOtherLoads() != null) {
                 //return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
-                return Message.redirect(con, Objects.requireNonNull(checkOtherLoads(con)));
+                return Message.redirect(con, checkOtherLoads());
             }
             return false;
         } else if (request.containsKey("username") && request.containsKey("secret")) { // username login
@@ -428,16 +425,17 @@ public class Control extends Thread {
                     if (user.getPassword().equals(secret)) {
                         Message.loginSuccess(con, "logged in as user " + username);
                         loginVector.add(user.getLocalSocketAddress());
-                        if (checkOtherLoads(con) != null) {
-                            return Message.redirect(con, Objects.requireNonNull(checkOtherLoads(con)));
-                            //return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
+                        if (checkOtherLoads() != null) {
+                            return Message.redirect(con, Objects.requireNonNull(checkOtherLoads()));
                         }
                         return false;
+                    } else {
+                        return Message.loginFailed(con, "attempt to login with wrong secret");
                     }
                 }
             }
             if (!foundUser) {
-                return Message.loginFailed(con, "attempt to login with wrong secret");
+                return Message.loginFailed(con, "attempt to login with wrong username");
             }
         } else {
             System.out.println("missed username or secret");
@@ -495,21 +493,6 @@ public class Control extends Thread {
         return broadcastActivity(con, activity);
     }
 
-//    private boolean onReceiveActivityBroadcast(Connection sourceConnection, JSONObject request) {
-//        for (Connection c : clientConnections) {
-//            Message.activityBroadcast(c, request);
-//        }
-//        if (parentConnection != null && parentConnection != sourceConnection) {
-//            Message.activityBroadcast(parentConnection, request);
-//        }
-//        if (lChildConnection != null && lChildConnection != sourceConnection) {
-//            Message.activityBroadcast(lChildConnection, request);
-//        }
-//        if (rChildConnection != null && rChildConnection != sourceConnection) {
-//            Message.activityBroadcast(rChildConnection, request);
-//        }
-//        return false;
-//    }
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
         for (Connection c : clientConnections) {
