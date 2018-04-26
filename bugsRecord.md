@@ -15,3 +15,10 @@ trigger: thread not safe
 Change Collections.synchronizedList to CopyOnWriteArrayList
 - By yu
 
+## \#03
+###Issue
+Register and login 2 users, servers will close connections and the user will close connection.
+
+###Response
+
+

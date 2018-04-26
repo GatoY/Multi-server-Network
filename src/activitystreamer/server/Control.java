@@ -144,6 +144,7 @@ public class Control extends Thread {
 			rChildConnection = con;
 		} else {
 			// socket require closing
+		    System.out.println("authenticateIncomingConnection fails so I close");
 			con.closeCon();
 			log.debug("the connection was refused");
 		}
@@ -152,6 +153,7 @@ public class Control extends Thread {
 
 	private boolean authenticationFail() {
 		if (parentConnection != null && parentConnection.isOpen()) {
+		    System.out.println("authenticate fail so I close");
 			parentConnection.closeCon();
 			parentConnection = null;
 		}
@@ -247,6 +249,7 @@ public class Control extends Thread {
 							& flags[2].equals(serverIdList[2])) {
 						validateMap.remove(temCon);
 						registerMap.remove(temCon);
+						System.out.println("register success!!!");
 						Message.registerSuccess(temCon, "register success for " + username);
 					}
 					return false;
@@ -280,6 +283,7 @@ public class Control extends Thread {
 			if (registerMap.containsKey(temCon)) {
 				if (registerMap.get(temCon).equals(username)) {
 						Message.registerFailed(temCon, username+" is already registered with the system");
+						System.out.println("register failed so I closed");
 						temCon.closeCon();
 					}
 				}
@@ -441,6 +445,7 @@ public class Control extends Thread {
 			}
 		}
 		if (logout) {
+		    System.out.println("logout so I closed");
 			con.closeCon();
 		}
 		return logout;
@@ -576,6 +581,7 @@ public class Control extends Thread {
 		log.info("closing " + clientConnections.size() + " client connections");
 		// clean up
 		for (Connection connection : clientConnections) {
+		    System.out.println("term==true so I close");
 			connection.closeCon();
 		}
 
