@@ -121,6 +121,8 @@ public class Control extends Thread {
                 return logout(con);
             case Message.ACTIVITY_MESSAGE:
                 return onReceiveActivityMessage(con, request);
+            case Message.ACTIVITY_BROADCAST:
+                return broadcastActivity(con, request);
             case Message.SERVER_ANNOUNCE:
                 return onReceiveServerAnnounce(con, request);
         }
@@ -203,7 +205,6 @@ public class Control extends Thread {
             if (rChildConnection != null) {
                 Message.lockRequest(rChildConnection, username, secret);
             }
-            // TODO return SUCCESS or FAIL
             return false;
         }
     }
@@ -494,6 +495,22 @@ public class Control extends Thread {
         return broadcastActivity(con, activity);
     }
 
+//    private boolean onReceiveActivityBroadcast(Connection sourceConnection, JSONObject request) {
+//        for (Connection c : clientConnections) {
+//            Message.activityBroadcast(c, request);
+//        }
+//        if (parentConnection != null && parentConnection != sourceConnection) {
+//            Message.activityBroadcast(parentConnection, request);
+//        }
+//        if (lChildConnection != null && lChildConnection != sourceConnection) {
+//            Message.activityBroadcast(lChildConnection, request);
+//        }
+//        if (rChildConnection != null && rChildConnection != sourceConnection) {
+//            Message.activityBroadcast(rChildConnection, request);
+//        }
+//        return false;
+//    }
+
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
         for (Connection c : clientConnections) {
             Message.activityBroadcast(c, activity);
@@ -510,6 +527,7 @@ public class Control extends Thread {
         }
         return false;
     }
+
 
     /**
      * The connection has been closed by the other party.
