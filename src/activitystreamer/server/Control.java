@@ -395,9 +395,14 @@ public class Control extends Thread {
 
     }
 
-    private Connection checkOtherLoads() {
+    private Connection checkOtherLoads(Connection con) {
         for (Map.Entry<Connection, Integer> entry : loadMap.entrySet()) {
+            // Hey! Here's bug! Plz fix it.
+            // if (clientConnections.size() - entry.getValue() >= 2) {
+            System.out.println(clientConnections.size());
+            System.out.println(entry.getValue());
             if (clientConnections.size() - entry.getValue() >= 2) {
+                System.out.println("return get key");
                 return entry.getKey();
             }
         }
@@ -408,8 +413,9 @@ public class Control extends Thread {
         if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
             Message.loginSuccess(con, "logged in as user " + true);
             loginVector.add(con.getSocket().getRemoteSocketAddress());
-            if (checkOtherLoads() != null) {
-                return Message.redirect(Objects.requireNonNull(checkOtherLoads()));
+            if (checkOtherLoads(con) != null) {
+                //return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
+                return Message.redirect(con,Objects.requireNonNull(checkOtherLoads(con)));
             }
             return false;
         } else if (request.containsKey("username") && request.containsKey("secret")) { // username login
@@ -422,8 +428,9 @@ public class Control extends Thread {
                     if (user.getPassword().equals(secret)) {
                         Message.loginSuccess(con, "logged in as user " + username);
                         loginVector.add(user.getLocalSocketAddress());
-                        if (checkOtherLoads() != null) {
-                            return Message.redirect(Objects.requireNonNull(checkOtherLoads()));
+                        if (checkOtherLoads(con) != null) {
+                            return Message.redirect(con, Objects.requireNonNull(checkOtherLoads(con)));
+                            //return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
                         }
                         return false;
                     }

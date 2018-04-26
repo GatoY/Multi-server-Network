@@ -1,6 +1,9 @@
 package activitystreamer.util;
 
 import activitystreamer.server.Connection;
+
+import java.net.InetAddress;
+
 import org.json.simple.JSONObject;
 
 public class Message {
@@ -168,11 +171,13 @@ public class Message {
 		return true;
 	}
 
-	public synchronized static boolean redirect(Connection con) {
+	public synchronized static boolean redirect(Connection con, Connection serverCon) {
 		JSONObject json = new JSONObject();
 		json.put("command", Message.REDIRECT);
-		json.put("hostname", con.getSocket().getInetAddress());
-		json.put("port", con.getSocket().getPort());
+		InetAddress addy = serverCon.getSocket().getInetAddress();
+		String remoteIp = addy.getHostAddress();
+		json.put("hostname", remoteIp);
+		json.put("port", serverCon.getSocket().getPort());
 		con.writeMsg(json.toJSONString());
 		System.out.println("redirect so I closed");
 		con.closeCon();
