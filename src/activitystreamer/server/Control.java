@@ -17,7 +17,6 @@ import org.json.simple.parser.JSONParser;
 import activitystreamer.util.Settings;
 
 public class Control extends Thread {
-
 	private static final Logger log = LogManager.getLogger();
 	private static List<Connection> clientConnections;
 	private static boolean term = false;
@@ -59,7 +58,7 @@ public class Control extends Thread {
 		// make a connection to another server if remote hostname is supplied
 		if (Settings.getRemoteHostname() != null) {
 			try {
-				System.out.println("sucess to link to");
+				System.out.println("success to link to");
 				Connection c = outgoingConnection(new Socket(Settings.getRemoteHostname(), Settings.getRemotePort()));
 			} catch (IOException e) {
 				log.error("failed to make connection to " + Settings.getRemoteHostname() + ":"
@@ -239,10 +238,10 @@ public class Control extends Thread {
 					}
 					validateMap.put(temCon, flags);
 					for (String l : flags) {
-						System.out.println(l);
+					    System.out.println(l);
 					}
 					for (String l : serverIdList) {
-						System.out.println(l);
+					    System.out.println(l);
 					}
 					if (flags[0].equals(serverIdList[0]) & flags[1].equals(serverIdList[1])
 							& flags[2].equals(serverIdList[2])) {
@@ -264,7 +263,6 @@ public class Control extends Thread {
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
 		System.out.println("got denied");
-
 		if (con.equals(parentConnection)) {
 			if (lChildConnection != null) {
 				Message.lockDenied(lChildConnection, username, secret);
