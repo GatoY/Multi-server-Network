@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import activitystreamer.util.Message;
 import activitystreamer.util.User;
@@ -42,7 +43,8 @@ public class Control extends Thread {
 	private Control() {
 		// initialize the clientConnections array
 		clientConnections = Collections.synchronizedList(new ArrayList<>());
-		userList = Collections.synchronizedList(new ArrayList<>());
+		userList = new CopyOnWriteArrayList<>();
+		//userList = Collections.synchronizedList(new ArrayList<>());
 		// start a listener
 		try {
 			listener = new Listener();
@@ -236,10 +238,10 @@ public class Control extends Thread {
 						flags[2] = "1";
 					}
 					validateMap.put(temCon, flags);
-					for(String l:flags) {
+					for (String l : flags) {
 						System.out.println(l);
 					}
-					for(String l:serverIdList) {
+					for (String l : serverIdList) {
 						System.out.println(l);
 					}
 					if (flags[0].equals(serverIdList[0]) & flags[1].equals(serverIdList[1])
@@ -262,11 +264,7 @@ public class Control extends Thread {
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
 		System.out.println("got denied");
-		for (User user : userList) {
-			if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
-				userList.remove(user);
-			}
-		}
+
 		if (con.equals(parentConnection)) {
 			if (lChildConnection != null) {
 				Message.lockDenied(lChildConnection, username, secret);
@@ -280,6 +278,20 @@ public class Control extends Thread {
 			}
 		}
 
+		for (Connection temCon : clientConnections) {
+			if (registerMap.containsKey(temCon)) {
+				if (registerMap.get(temCon).equals(username)) {
+						Message.registerFailed(temCon, username+" is already registered with the system");
+						temCon.closeCon();
+					}
+				}
+			}
+		
+		for (User user : userList) {
+			if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
+				userList.remove(user);
+			}
+		}
 	}
 
 	private boolean onLockRequest(Connection con, JSONObject request) {
