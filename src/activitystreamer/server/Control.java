@@ -30,7 +30,7 @@ public class Control extends Thread {
     private static Map<Connection, String[]> validateMap = new ConcurrentHashMap<>();
     private static Map<Connection, String> registerMap = new ConcurrentHashMap<>();
     // list to record if of cooperated servers;
-    String[] serverIdList = { "0", "0", "0" };
+    String[] serverIdList = {"0", "0", "0"};
 
     public static Control getInstance() {
         if (control == null) {
@@ -73,8 +73,7 @@ public class Control extends Thread {
      * connection should close.
      *
      * @param con
-     * @param msg
-     *            result JSON string
+     * @param msg result JSON string
      * @return
      */
     public synchronized boolean process(Connection con, String msg) {
@@ -94,36 +93,36 @@ public class Control extends Thread {
 
         String command = (String) request.get("command");
         switch (command) {
-        case Message.INVALID_MESSAGE:
-            return true;
-        case Message.AUTHENTICATE:
-            return authenticateIncomingConnection(con, request);
-        case Message.AUTHENTICATION_FAIL:
-            return authenticationFail();
-        case Message.REGISTER:
-            return register(con, request);
-        case Message.LOCK_REQUEST:
-            return onLockRequest(con, request);
-        case Message.LOCK_DENIED:
-            onLockDenied(con, request);
-            return false;
-        case Message.LOCK_ALLOWED:
-            if (onLockAllowed(con, request)) {
+            case Message.INVALID_MESSAGE:
                 return true;
-            }
-            // addUser(con, (String) request.get("username"), (String)
-            // request.get("secret"));
-            // return Message.registerSuccess(con, "register success for " +
-            // request.get("username"));
-            return false;
-        case Message.LOGIN:
-            return login(con, request);
-        case Message.LOGOUT:
-            return logout(con);
-        case Message.ACTIVITY_MESSAGE:
-            return onReceiveActivityMessage(con, request);
-        case Message.SERVER_ANNOUNCE:
-            return onReceiveServerAnnounce(con, request);
+            case Message.AUTHENTICATE:
+                return authenticateIncomingConnection(con, request);
+            case Message.AUTHENTICATION_FAIL:
+                return authenticationFail();
+            case Message.REGISTER:
+                return register(con, request);
+            case Message.LOCK_REQUEST:
+                return onLockRequest(con, request);
+            case Message.LOCK_DENIED:
+                onLockDenied(con, request);
+                return false;
+            case Message.LOCK_ALLOWED:
+                if (onLockAllowed(con, request)) {
+                    return true;
+                }
+                // addUser(con, (String) request.get("username"), (String)
+                // request.get("secret"));
+                // return Message.registerSuccess(con, "register success for " +
+                // request.get("username"));
+                return false;
+            case Message.LOGIN:
+                return login(con, request);
+            case Message.LOGOUT:
+                return logout(con);
+            case Message.ACTIVITY_MESSAGE:
+                return onReceiveActivityMessage(con, request);
+            case Message.SERVER_ANNOUNCE:
+                return onReceiveServerAnnounce(con, request);
         }
         return true;
     }
@@ -190,7 +189,7 @@ public class Control extends Thread {
                 return Message.registerSuccess(con, "register success for " + username);
             }
         } else { // If there're multiple servers in the system
-            String[] validatedList = { "0", "0", "0" };
+            String[] validatedList = {"0", "0", "0"};
             validateMap.put(con, validatedList);
             registerMap.put(con, username);
 
@@ -415,7 +414,7 @@ public class Control extends Thread {
             loginVector.add(con.getSocket().getRemoteSocketAddress());
             if (checkOtherLoads(con) != null) {
                 //return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
-                return Message.redirect(con,Objects.requireNonNull(checkOtherLoads(con)));
+                return Message.redirect(con, Objects.requireNonNull(checkOtherLoads(con)));
             }
             return false;
         } else if (request.containsKey("username") && request.containsKey("secret")) { // username login
