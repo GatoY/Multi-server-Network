@@ -285,8 +285,8 @@ public class Control extends Thread {
 						temCon.closeCon();
 					}
 				}
-			}
-		
+		}
+
 		for (User user : userList) {
 			if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
 				userList.remove(user);
