@@ -430,14 +430,15 @@ public class Control extends Thread {
                         loginVector.add(user.getLocalSocketAddress());
                         if (checkOtherLoads(con) != null) {
                             return Message.redirect(con, Objects.requireNonNull(checkOtherLoads(con)));
-                            //return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
                         }
                         return false;
+                    } else {
+                        return Message.loginFailed(con, "attempt to login with wrong secret");
                     }
                 }
             }
             if (!foundUser) {
-                return Message.loginFailed(con, "attempt to login with wrong secret");
+                return Message.loginFailed(con, "attempt to login with wrong username");
             }
         } else {
             System.out.println("missed username or secret");
