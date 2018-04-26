@@ -171,7 +171,7 @@ public class Control extends Thread {
 				return true;
 			}
 		}
-
+		System.out.println("somebody wants to register");
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
 
@@ -209,6 +209,7 @@ public class Control extends Thread {
 		}
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
+		System.out.println("got allowed");
 		if (con.equals(parentConnection)) { // if from parent:
 			if (lChildConnection != null) {
 				Message.lockAllowed(lChildConnection, username, secret); // send to left child
@@ -235,7 +236,13 @@ public class Control extends Thread {
 						flags[2] = "1";
 					}
 					validateMap.put(temCon, flags);
-					if (flags[0].equals(serverIdList[0]) & flags[1].equals(serverIdList[2])
+					for(String l:flags) {
+						System.out.println(l);
+					}
+					for(String l:serverIdList) {
+						System.out.println(l);
+					}
+					if (flags[0].equals(serverIdList[0]) & flags[1].equals(serverIdList[1])
 							& flags[2].equals(serverIdList[2])) {
 						validateMap.remove(temCon);
 						registerMap.remove(temCon);
@@ -254,6 +261,7 @@ public class Control extends Thread {
 		}
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
+		System.out.println("got denied");
 		for (User user : userList) {
 			if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
 				userList.remove(user);
@@ -280,6 +288,7 @@ public class Control extends Thread {
 		}
 		String username = (String) request.get("username");
 		String secret = (String) request.get("secret");
+		System.out.println("got request");
 		if (isUserRegistered(username)) { // almost useless
 			for (User user : userList) {
 				if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
@@ -359,10 +368,10 @@ public class Control extends Thread {
 		if (con.equals(parentConnection)) {
 			serverIdList[0] = "1";
 		}
-		if (con.equals(rChildConnection)) {
+		if (con.equals(lChildConnection)) {
 			serverIdList[1] = "1";
 		}
-		if (con.equals(lChildConnection)) {
+		if (con.equals(rChildConnection)) {
 			serverIdList[2] = "1";
 		}
 		return false;
