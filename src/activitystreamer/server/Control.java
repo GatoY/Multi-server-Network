@@ -30,7 +30,7 @@ public class Control extends Thread {
     private static Map<Connection, String[]> validateMap = new ConcurrentHashMap<>();
     private static Map<Connection, String> registerMap = new ConcurrentHashMap<>();
     // list to record if of cooperated servers;
-    String[] serverIdList = {"0", "0", "0"};
+    private String[] serverIdList = {"0", "0", "0"};
 
     public static Control getInstance() {
         if (control == null) {
@@ -395,12 +395,10 @@ public class Control extends Thread {
 
     }
 
-    private Connection checkOtherLoads(Connection con) {
+    private Connection checkOtherLoads() {
         for (Map.Entry<Connection, Integer> entry : loadMap.entrySet()) {
             // Hey! Here's bug! Plz fix it.
             // if (clientConnections.size() - entry.getValue() >= 2) {
-            System.out.println(clientConnections.size());
-            System.out.println(entry.getValue());
             if (clientConnections.size() - entry.getValue() >= 2) {
                 System.out.println("return get key");
                 return entry.getKey();
@@ -413,9 +411,9 @@ public class Control extends Thread {
         if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
             Message.loginSuccess(con, "logged in as user " + true);
             loginVector.add(con.getSocket().getRemoteSocketAddress());
-            if (checkOtherLoads(con) != null) {
+            if (checkOtherLoads() != null) {
                 //return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
-                return Message.redirect(con, Objects.requireNonNull(checkOtherLoads(con)));
+                return Message.redirect(con, Objects.requireNonNull(checkOtherLoads()));
             }
             return false;
         } else if (request.containsKey("username") && request.containsKey("secret")) { // username login
@@ -428,8 +426,8 @@ public class Control extends Thread {
                     if (user.getPassword().equals(secret)) {
                         Message.loginSuccess(con, "logged in as user " + username);
                         loginVector.add(user.getLocalSocketAddress());
-                        if (checkOtherLoads(con) != null) {
-                            return Message.redirect(con, Objects.requireNonNull(checkOtherLoads(con)));
+                        if (checkOtherLoads() != null) {
+                            return Message.redirect(con, Objects.requireNonNull(checkOtherLoads()));
                         }
                         return false;
                     } else {
@@ -496,21 +494,6 @@ public class Control extends Thread {
         return broadcastActivity(con, activity);
     }
 
-//    private boolean onReceiveActivityBroadcast(Connection sourceConnection, JSONObject request) {
-//        for (Connection c : clientConnections) {
-//            Message.activityBroadcast(c, request);
-//        }
-//        if (parentConnection != null && parentConnection != sourceConnection) {
-//            Message.activityBroadcast(parentConnection, request);
-//        }
-//        if (lChildConnection != null && lChildConnection != sourceConnection) {
-//            Message.activityBroadcast(lChildConnection, request);
-//        }
-//        if (rChildConnection != null && rChildConnection != sourceConnection) {
-//            Message.activityBroadcast(rChildConnection, request);
-//        }
-//        return false;
-//    }
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
         for (Connection c : clientConnections) {
