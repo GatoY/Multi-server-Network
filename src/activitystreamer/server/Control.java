@@ -27,10 +27,10 @@ public class Control extends Thread {
     private static Map<Connection, Integer> loadMap = new ConcurrentHashMap<>();
     private static List<User> userList; // the global registered users
     private static Vector<SocketAddress> loginVector = new Vector<>();
-    private static Map<Connection, String[]> idMap = new ConcurrentHashMap<>();
+    private static Map<Connection, String[]> validateMap = new ConcurrentHashMap<>();
     private static Map<Connection, String> registerMap = new ConcurrentHashMap<>();
     // list to record if of cooperated servers;
-    private static String[] serverIdList = new String[3];
+    String[] serverIdList = {"0", "0", "0"};
 
     public static Control getInstance() {
         if (control == null) {
@@ -57,6 +57,7 @@ public class Control extends Thread {
         // make a connection to another server if remote hostname is supplied
         if (Settings.getRemoteHostname() != null) {
             try {
+                System.out.println("sucess to link to");
                 Connection c = outgoingConnection(new Socket(Settings.getRemoteHostname(), Settings.getRemotePort()));
             } catch (IOException e) {
                 log.error("failed to make connection to " + Settings.getRemoteHostname() + ":"
@@ -182,9 +183,10 @@ public class Control extends Thread {
                 return Message.registerSuccess(con, "register success for " + username);
             }
         } else { // If there're multiple servers in the system
-            String[] serverIdList = {"0", "0", "0"};
-            idMap.put(con, serverIdList);
+            String[] validatedList = {"0", "0", "0"};
+            validateMap.put(con, validatedList);
             registerMap.put(con, username);
+
             addUser(con, username, secret);
             if (parentConnection != null) {
                 Message.lockRequest(parentConnection, username, secret);
@@ -195,6 +197,7 @@ public class Control extends Thread {
             if (rChildConnection != null) {
                 Message.lockRequest(rChildConnection, username, secret);
             }
+            // TODO return SUCCESS or FAIL
             return false;
         }
     }
@@ -217,11 +220,10 @@ public class Control extends Thread {
                 Message.lockAllowed(parentConnection, username, secret); // send to parent
             }
         }
-        String[] label = {"1", "1", "1"};
         for (Connection temCon : clientConnections) {
             if (registerMap.containsKey(temCon)) {
                 if (registerMap.get(temCon).equals(username)) {
-                    String[] flags = idMap.get(temCon);
+                    String[] flags = validateMap.get(temCon);
                     if (con.equals(parentConnection)) {
                         flags[0] = "1";
                     }
@@ -231,8 +233,10 @@ public class Control extends Thread {
                     if (con.equals(rChildConnection)) {
                         flags[2] = "1";
                     }
-                    if (flags.equals(label)) {
-                        idMap.remove(temCon);
+                    validateMap.put(temCon, flags);
+                    if (flags[0].equals(serverIdList[0]) & flags[1].equals(serverIdList[2])
+                            & flags[2].equals(serverIdList[2])) {
+                        validateMap.remove(temCon);
                         registerMap.remove(temCon);
                         Message.registerSuccess(temCon, "register success for " + username);
                     }
@@ -307,8 +311,12 @@ public class Control extends Thread {
                 if (parentConnection != null) {
                     Message.lockRequest(parentConnection, username, secret);
                 } else {
-                    Message.lockAllowed(lChildConnection, username, secret);
-                    Message.lockAllowed(rChildConnection, username, secret);
+                    if (lChildConnection != null) {
+                        Message.lockAllowed(lChildConnection, username, secret);
+                    }
+                    if (rChildConnection != null) {
+                        Message.lockAllowed(rChildConnection, username, secret);
+                    }
                 }
             }
         }
@@ -346,17 +354,15 @@ public class Control extends Thread {
         if (rChildConnection != null && con != rChildConnection) {
             rChildConnection.writeMsg(request.toJSONString());
         }
-        // if (!idMap.containsKey(con)) {
-        // idMap.put(con, (String) request.get("id"));
-        // }
+
         if (con.equals(parentConnection)) {
-            serverIdList[0] = (String) request.get("id");
+            serverIdList[0] = "1";
         }
         if (con.equals(rChildConnection)) {
-            serverIdList[1] = (String) request.get("id");
+            serverIdList[1] = "1";
         }
         if (con.equals(lChildConnection)) {
-            serverIdList[1] = (String) request.get("id");
+            serverIdList[2] = "1";
         }
         return false;
 
@@ -373,7 +379,7 @@ public class Control extends Thread {
 
     private boolean login(Connection con, JSONObject request) {
         if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
-            Message.loginSuccess(con, "logged in as user " + request.get("username"));
+            Message.loginSuccess(con, "logged in as user " + true);
             loginVector.add(con.getSocket().getRemoteSocketAddress());
             if (checkOtherLoads() != null) {
                 return Message.redirect(Objects.requireNonNull(checkOtherLoads()));
@@ -408,7 +414,6 @@ public class Control extends Thread {
 
     private boolean logout(Connection con) {
         boolean logout = false;
-
         for (User user : userList) {
             if (user.getLocalSocketAddress().equals(con.getSocket().getRemoteSocketAddress())) {
                 loginVector.remove(con.getSocket().getRemoteSocketAddress());
@@ -560,5 +565,4 @@ public class Control extends Thread {
     public final void setTerm(boolean t) {
         term = t;
     }
-
 }
