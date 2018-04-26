@@ -79,7 +79,7 @@ public class Control extends Thread {
     public synchronized boolean process(Connection con, String msg) {
         JSONObject request;
         try {
-            System.out.println(msg);
+//            System.out.println(msg);
             request = (JSONObject) new JSONParser().parse(msg);
         } catch (Exception e) {
             System.out.println("the received message is not in valid format");
