@@ -106,10 +106,6 @@ public class Control extends Thread {
                 if (onLockAllowed(con, request)) {
                     return true;
                 }
-                // addUser(con, (String) request.get("username"), (String)
-                // request.get("secret"));
-                // return Message.registerSuccess(con, "register success for " +
-                // request.get("username"));
                 return false;
             case Message.LOGIN:
                 return login(con, request);
