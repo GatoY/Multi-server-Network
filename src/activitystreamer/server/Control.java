@@ -339,6 +339,9 @@ public class Control extends Thread {
     }
 
     private void addUser(Connection con, String username, String secret) {
+        if(con.equals(null)) {
+            User user = new User(null, username, secret);
+        }
         User user = new User(con.getSocket().getRemoteSocketAddress(), username, secret);
         userList.add(user);
     }
@@ -411,6 +414,7 @@ public class Control extends Thread {
                     foundUser = true;
                     if (user.getPassword().equals(secret)) {
                         Message.loginSuccess(con, "logged in as user " + username);
+                        //Here's a bug.
                         loginVector.add(user.getLocalSocketAddress());
                         if (checkOtherLoads() != null) {
                             return Message.redirect(con, Objects.requireNonNull(checkOtherLoads()));
@@ -439,6 +443,7 @@ public class Control extends Thread {
                 logout = true;
             }
         }
+        // maybe useless
         if (logout) {
             con.closeCon();
         }
