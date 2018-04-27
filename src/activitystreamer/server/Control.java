@@ -280,6 +280,12 @@ public class Control extends Thread {
             if (parentConnection != null) {
                 Message.lockDenied(parentConnection, username, secret);
             }
+            if (con.equals(lChildConnection)) {
+                Message.lockDenied(rChildConnection, username, secret);
+            }
+            if (con.equals(rChildConnection)) {
+                Message.lockDenied(lChildConnection, username, secret);
+            }
         }
 
         for (Connection temCon : clientConnections) {
