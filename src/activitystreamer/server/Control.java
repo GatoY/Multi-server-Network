@@ -58,7 +58,6 @@ public class Control extends Thread {
         // make a connection to another server if remote hostname is supplied
         if (Settings.getRemoteHostname() != null) {
             try {
-                System.out.println("success to link to");
                 Connection c = outgoingConnection(new Socket(Settings.getRemoteHostname(), Settings.getRemotePort()));
             } catch (IOException e) {
                 log.error("failed to make connection to " + Settings.getRemoteHostname() + ":"
@@ -79,15 +78,12 @@ public class Control extends Thread {
     public synchronized boolean process(Connection con, String msg) {
         JSONObject request;
         try {
-            System.out.println(msg);
             request = (JSONObject) new JSONParser().parse(msg);
         } catch (Exception e) {
-            System.out.println("the received message is not in valid format");
             return Message.invalidMsg(con, "the received message is not in valid format");
         }
 
         if (request.get("command") == null) {
-            System.out.println("the received message did not contain a command");
             return Message.invalidMsg(con, "the received message did not contain a command");
         }
 
@@ -148,7 +144,6 @@ public class Control extends Thread {
             rChildConnection = con;
         } else {
             // socket require closing
-            System.out.println("authenticateIncomingConnection fails so I close");
             con.closeCon();
             log.debug("the connection was refused");
         }
@@ -157,7 +152,6 @@ public class Control extends Thread {
 
     private boolean authenticationFail() {
         if (parentConnection != null && parentConnection.isOpen()) {
-            System.out.println("authenticate fail so I close");
             parentConnection.closeCon();
             parentConnection = null;
         }
@@ -178,7 +172,6 @@ public class Control extends Thread {
                 return true;
             }
         }
-        System.out.println("somebody wants to register");
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
 
@@ -215,7 +208,6 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        System.out.println("got allowed");
         if (con.equals(parentConnection)) { // if from parent:
             if (lChildConnection != null) {
                 Message.lockAllowed(lChildConnection, username, secret); // send to left child
@@ -242,17 +234,10 @@ public class Control extends Thread {
                         flags[2] = "1";
                     }
                     validateMap.put(temCon, flags);
-                    for (String l : flags) {
-                        System.out.println(l);
-                    }
-                    for (String l : serverIdList) {
-                        System.out.println(l);
-                    }
                     if (flags[0].equals(serverIdList[0]) & flags[1].equals(serverIdList[1])
                             & flags[2].equals(serverIdList[2])) {
                         validateMap.remove(temCon);
                         registerMap.remove(temCon);
-                        System.out.println("register success!!!");
                         Message.registerSuccess(temCon, "register success for " + username);
                     }
                     return false;
@@ -268,7 +253,6 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        System.out.println("got denied");
         if (con.equals(parentConnection)) {
             if (lChildConnection != null) {
                 Message.lockDenied(lChildConnection, username, secret);
@@ -292,7 +276,6 @@ public class Control extends Thread {
             if (registerMap.containsKey(temCon)) {
                 if (registerMap.get(temCon).equals(username)) {
                     Message.registerFailed(temCon, username + " is already registered with the system");
-                    System.out.println("register failed so I closed");
                     temCon.closeCon();
                 }
             }
@@ -311,7 +294,6 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        System.out.println("got request");
         if (isUserRegistered(username)) { // almost useless
             for (User user : userList) {
                 if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
@@ -405,7 +387,6 @@ public class Control extends Thread {
     private String checkOtherLoads() {
         for (Map.Entry<String, Integer> entry : loadMap.entrySet()) {
             if (clientConnections.size() - entry.getValue() >= 2) {
-                System.out.println("return get key");
                 return entry.getKey();
             }
         }
@@ -444,7 +425,6 @@ public class Control extends Thread {
                 return Message.loginFailed(con, "attempt to login with wrong username");
             }
         } else {
-            System.out.println("missed username or secret");
             return Message.invalidMsg(con, "missed username or secret");
         }
         loginVector.add(con.getSocket().getRemoteSocketAddress());
@@ -460,7 +440,6 @@ public class Control extends Thread {
             }
         }
         if (logout) {
-            System.out.println("logout so I closed");
             con.closeCon();
         }
         return logout;
@@ -598,7 +577,6 @@ public class Control extends Thread {
         log.info("closing " + clientConnections.size() + " client connections");
         // clean up
         for (Connection connection : clientConnections) {
-            System.out.println("term==true so I close");
             connection.closeCon();
         }
 
