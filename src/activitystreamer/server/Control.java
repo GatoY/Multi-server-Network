@@ -119,8 +119,9 @@ public class Control extends Thread {
             return broadcastActivity(con, request);
         case Message.SERVER_ANNOUNCE:
             return onReceiveServerAnnounce(con, request);
+        default:
+            return Message.invalidMsg(con, "unknown message");
         }
-        return false;
     }
 
     private boolean authenticateIncomingConnection(Connection con, JSONObject request) {
