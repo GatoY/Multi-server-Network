@@ -332,14 +332,20 @@ public class Control extends Thread {
                     userList.remove(user);
                 }
             }
-            if (lChildConnection != null) {
-                Message.lockDenied(lChildConnection, username, secret);
-            }
-            if (rChildConnection != null) {
-                Message.lockDenied(rChildConnection, username, secret);
-            }
-            if (parentConnection != null) {
-                Message.lockDenied(parentConnection, username, secret);
+            if (con.equals(parentConnection)) {
+                if (lChildConnection != null) {
+                    Message.lockDenied(lChildConnection, username, secret);
+                    Message.lockRequest(lChildConnection, username, secret);
+                }
+                if (rChildConnection != null) {
+                    Message.lockDenied(rChildConnection, username, secret);
+                    Message.lockRequest(rChildConnection, username, secret);
+                }
+            } else {
+                if (parentConnection != null) {
+                    Message.lockRequest(parentConnection, username, secret);
+                    Message.lockDenied(parentConnection, username, secret);
+                }
             }
         } else { // if the username is not already known to the server
             addUser(con, username, secret); // record this username and secret pair in its local storage.
