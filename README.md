@@ -2,7 +2,7 @@
 
 ##Introduction
 
-This project is to implement a prototype of ditributed servers on which clients can register, login and broadcast objects to all the other clients.
+This project is to implement a prototype of distributed servers on which clients can register, login and broadcast objects to all the other clients.
 
 ##Team
 
@@ -14,8 +14,21 @@ Our servers' architecture is a binary tree. A single server will connect to anot
 Clients can log in on any available servers whatever the load may be, because the server will redirect the login request to another server when this server has to many loads to handle.
 
 ##Usage
-Specific arguments is described in help functions of this project.
+There're 2 jar files in the project. To launch the project, firstly run the Server by: 
+```
+java -jar ActivityStreamerClient.jar -lp 3780 -s 123
+```
+Then we can run another server connecting to the former one by: 
+```
+java -jar ActivityStreamerClient.jar -rp 3781 -rh localhost -lp 3780 -s 123
+```
+Then we register several clients by running scripts like:
+```
+java -jar ActivityStreamerServer.jar -rh localhost -rp 3780 -u user1
+```
+Then we are able to send and receive activities in the GUI
 
+Specific arguments is described in help functions of this project.
 
 
 ##Files
