@@ -128,11 +128,22 @@ public class ClientSkeleton extends Thread {
         JSONObject jo = (JSONObject) jp.parse(msg);
         textFrame.setOutputText(jo);
         String cmd = (String) jo.get("command");
-        if (cmd.equals(Message.REGISTER_SUCCESS)) {
+        switch (cmd) {
+        case Message.REGISTER_SUCCESS:
             out.write(Message.login(Settings.getUsername()) + "\n");
             out.flush();
-        } else if (cmd.equals(Message.REDIRECT)) {
+            break;
+        
+        case Message.REDIRECT:
             redirect(jo);
+            break;
+        case Message.REGISTER_FAILED:
+        case Message.INVALID_MESSAGE:
+            if (!socket.isClosed()) {
+                socket.close();
+            }
+            textFrame.setOutputText(Message.connCloseMsg());
+            break;     
         }
     }
 
@@ -151,6 +162,7 @@ public class ClientSkeleton extends Thread {
         Settings.setRemotePort(port);
 
         try {
+            textFrame.setOutputText(Message.redirectMsg());
             socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
             dos = new DataOutputStream(socket.getOutputStream());
             out = new PrintWriter(dos, true);
