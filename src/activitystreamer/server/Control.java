@@ -93,32 +93,32 @@ public class Control extends Thread {
         switch (command) {
         case Message.INVALID_MESSAGE:
             return true;
-            case Message.AUTHENTICATE:
-                return authenticateIncomingConnection(con, request);
-            case Message.AUTHENTICATION_FAIL:
-                return authenticationFail();
-            case Message.REGISTER:
-                return register(con, request);
-            case Message.LOCK_REQUEST:
-                return onLockRequest(con, request);
-            case Message.LOCK_DENIED:
-                onLockDenied(con, request);
-                return false;
-            case Message.LOCK_ALLOWED:
-                if (onLockAllowed(con, request)) {
-                    return true;
-                }
-                return false;
-            case Message.LOGIN:
-                return login(con, request);
-            case Message.LOGOUT:
-                return logout(con);
-            case Message.ACTIVITY_MESSAGE:
-                return onReceiveActivityMessage(con, request);
-            case Message.ACTIVITY_BROADCAST:
-                return broadcastActivity(con, request);
-            case Message.SERVER_ANNOUNCE:
-                return onReceiveServerAnnounce(con, request);
+        case Message.AUTHENTICATE:
+            return authenticateIncomingConnection(con, request);
+        case Message.AUTHENTICATION_FAIL:
+            return authenticationFail();
+        case Message.REGISTER:
+            return register(con, request);
+        case Message.LOCK_REQUEST:
+            return onLockRequest(con, request);
+        case Message.LOCK_DENIED:
+            onLockDenied(con, request);
+            return false;
+        case Message.LOCK_ALLOWED:
+            if (onLockAllowed(con, request)) {
+                return true;
+            }
+            return false;
+        case Message.LOGIN:
+            return login(con, request);
+        case Message.LOGOUT:
+            return logout(con);
+        case Message.ACTIVITY_MESSAGE:
+            return onReceiveActivityMessage(con, request);
+        case Message.ACTIVITY_BROADCAST:
+            return broadcastActivity(con, request);
+        case Message.SERVER_ANNOUNCE:
+            return onReceiveServerAnnounce(con, request);
         }
         return false;
     }
@@ -172,7 +172,7 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-
+        //System.out.println("1");
         // If there's only one server in the system
         if (parentConnection == null && lChildConnection == null && rChildConnection == null) {
             if (isUserRegistered(username)) {
@@ -185,7 +185,7 @@ public class Control extends Thread {
             String[] validatedList = { "0", "0", "0" };
             validateMap.put(con, validatedList);
             registerMap.put(con, username);
-            allowMap.put(username, validatedList);
+            //allowMap.put(username, validatedList);
             addUser(con, username, secret);
             if (parentConnection != null) {
                 Message.lockRequest(parentConnection, username, secret);
@@ -206,22 +206,27 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
+        //System.out.println("2");
         if (allowMap.containsKey(username)) {
             String[] allowList = allowMap.get(username);
 
             if (con.equals(parentConnection)) { // sent from parent node.
                 if (lChildConnection != null) {
+                    //System.out.println("8");
                     Message.lockAllowed(lChildConnection, username, secret); // send to left child
                 }
                 if (rChildConnection != null) {
+                    //System.out.println("9");
                     Message.lockAllowed(rChildConnection, username, secret); // send to right child
                 }
                 allowMap.remove(username);
             }
             if (con.equals(lChildConnection)) { // sent from lChild node.
                 allowList[1] = "1";
-                if (allowList[2].equals("1") || rChildConnection.equals(null)) {
+                //System.out.println(allowList[2]);
+                if (allowList[2].equals("1") || rChildConnection==null) {
                     if (parentConnection != null) {
+                        //System.out.println("5");
                         Message.lockAllowed(parentConnection, username, secret); // send to parent
                     }
                     allowMap.remove(username);
@@ -235,16 +240,20 @@ public class Control extends Thread {
                 allowList[2] = "1";
                 if (allowList[1].equals("1") || (lChildConnection.equals(null))) {
                     if (parentConnection != null) {
+                        //System.out.println("6");
                         Message.lockAllowed(parentConnection, username, secret); // send to parent
                     }
                     allowMap.remove(username);
                 }
                 if (parentConnection == null || lChildConnection != null) {
+                    //System.out.println("7");
                     Message.lockAllowed(lChildConnection, username, secret);
                     allowMap.remove(username);
                 }
             }
-            allowMap.put(username, allowList);
+            if (allowMap.containsKey(username)) {
+                allowMap.put(username, allowList);
+            }
         }
 
         for (Connection temCon : clientConnections) {
@@ -280,6 +289,7 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
+        //System.out.println("3");
         if (con.equals(parentConnection)) {
             if (lChildConnection != null) {
                 Message.lockDenied(lChildConnection, username, secret);
@@ -325,6 +335,9 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
+        //System.out.println("4");
+        String[] validatedList = { "0", "0", "0" };
+        allowMap.put(username, validatedList);
         if (isUserRegistered(username)) { // almost useless
             for (User user : userList) {
                 if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {

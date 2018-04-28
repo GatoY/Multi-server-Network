@@ -21,4 +21,6 @@ Register and login 2 users, servers will close connections and the user will clo
 
 ###Response
 Issue lied in Redirect part. We should send rediret to client other than server. Besides, the message should include another server's ip and port. Last but not least, socket.getInetAddress().getHostName() is the right one to get IP. Oh god.
+- By yu
+
 
