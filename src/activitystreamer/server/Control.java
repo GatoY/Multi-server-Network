@@ -92,35 +92,34 @@ public class Control extends Thread {
         switch (command) {
         case Message.INVALID_MESSAGE:
             return true;
-        case Message.AUTHENTICATE:
-            return authenticateIncomingConnection(con, request);
-        case Message.AUTHENTICATION_FAIL:
-            return authenticationFail();
-        case Message.REGISTER:
-            return register(con, request);
-        case Message.LOCK_REQUEST:
-            return onLockRequest(con, request);
-        case Message.LOCK_DENIED:
-            onLockDenied(con, request);
-            return false;
-        case Message.LOCK_ALLOWED:
-            if (onLockAllowed(con, request)) {
-                return true;
-            }
-            return false;
-        case Message.LOGIN:
-            return login(con, request);
-        case Message.LOGOUT:
-            return logout(con);
-        case Message.ACTIVITY_MESSAGE:
-            return onReceiveActivityMessage(con, request);
-        case Message.ACTIVITY_BROADCAST:
-            return broadcastActivity(con, request);
-        case Message.SERVER_ANNOUNCE:
-            return onReceiveServerAnnounce(con, request);
-        default:
-            return Message.invalidMsg(con, "unknown commands");
+            case Message.AUTHENTICATE:
+                return authenticateIncomingConnection(con, request);
+            case Message.AUTHENTICATION_FAIL:
+                return authenticationFail();
+            case Message.REGISTER:
+                return register(con, request);
+            case Message.LOCK_REQUEST:
+                return onLockRequest(con, request);
+            case Message.LOCK_DENIED:
+                onLockDenied(con, request);
+                return false;
+            case Message.LOCK_ALLOWED:
+                if (onLockAllowed(con, request)) {
+                    return true;
+                }
+                return false;
+            case Message.LOGIN:
+                return login(con, request);
+            case Message.LOGOUT:
+                return logout(con);
+            case Message.ACTIVITY_MESSAGE:
+                return onReceiveActivityMessage(con, request);
+            case Message.ACTIVITY_BROADCAST:
+                return broadcastActivity(con, request);
+            case Message.SERVER_ANNOUNCE:
+                return onReceiveServerAnnounce(con, request);
         }
+        return false;
     }
 
     private boolean authenticateIncomingConnection(Connection con, JSONObject request) {
@@ -396,7 +395,7 @@ public class Control extends Thread {
 
     private boolean login(Connection con, JSONObject request) {
         if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
-            Message.loginSuccess(con, "logged in as user " + true);
+            Message.loginSuccess(con, "logged in as user " + request.get("username"));
             loginVector.add(con.getSocket().getRemoteSocketAddress());
             if (checkOtherLoads() != null) {
                 return Message.redirect(con, checkOtherLoads());
@@ -471,12 +470,15 @@ public class Control extends Thread {
         String secret = (String) request.get("secret");
         JSONObject activity = (JSONObject) request.get("activity");
         activity.put("authenticated_user", username);
+        JSONObject fuck = new JSONObject();
+        fuck.put("activity", activity);
+        fuck.put("command", Message.ACTIVITY_BROADCAST);
 
         if (!username.equals("anonymous") && !isUserLoggedInLocally(username, secret)) {
             return Message.authenticationFail(con, "the username and secret do not match the logged in the user, "
                     + "or the user has not logged in yet");
         }
-        return broadcastActivity(con, activity);
+        return broadcastActivity(con, fuck);
     }
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
