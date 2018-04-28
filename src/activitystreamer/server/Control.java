@@ -29,6 +29,7 @@ public class Control extends Thread {
     private static Vector<SocketAddress> loginVector = new Vector<>();
     private static Map<Connection, String[]> validateMap = new ConcurrentHashMap<>();
     private static Map<Connection, String> registerMap = new ConcurrentHashMap<>();
+    private static Map<String, String[]> allowMap = new ConcurrentHashMap<>();
     // list to record if of cooperated servers;
     private String[] serverIdList = { "0", "0", "0" };
 
@@ -184,7 +185,7 @@ public class Control extends Thread {
             String[] validatedList = { "0", "0", "0" };
             validateMap.put(con, validatedList);
             registerMap.put(con, username);
-
+            allowMap.put(username, validatedList);
             addUser(con, username, secret);
             if (parentConnection != null) {
                 Message.lockRequest(parentConnection, username, secret);
@@ -205,18 +206,47 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        if (con.equals(parentConnection)) { // if from parent:
-            if (lChildConnection != null) {
-                Message.lockAllowed(lChildConnection, username, secret); // send to left child
+        if (allowMap.containsKey(username)) {
+            String[] allowList = allowMap.get(username);
+
+            if (con.equals(parentConnection)) { // sent from parent node.
+                if (lChildConnection != null) {
+                    Message.lockAllowed(lChildConnection, username, secret); // send to left child
+                }
+                if (rChildConnection != null) {
+                    Message.lockAllowed(rChildConnection, username, secret); // send to right child
+                }
+                allowMap.remove(username);
             }
-            if (rChildConnection != null) {
-                Message.lockAllowed(rChildConnection, username, secret); // send to right child
+            if (con.equals(lChildConnection)) { // sent from lChild node.
+                allowList[1] = "1";
+                if (allowList[2].equals("1") || rChildConnection.equals(null)) {
+                    if (parentConnection != null) {
+                        Message.lockAllowed(parentConnection, username, secret); // send to parent
+                    }
+                    allowMap.remove(username);
+                }
+                if (parentConnection == null || rChildConnection != null) {
+                    Message.lockAllowed(rChildConnection, username, secret);
+                    allowMap.remove(username);
+                }
             }
-        } else { // if from children:
-            if (parentConnection != null) {
-                Message.lockAllowed(parentConnection, username, secret); // send to parent
+            if (con.equals(rChildConnection)) { // sent from rChild node.
+                allowList[2] = "1";
+                if (allowList[1].equals("1") || (lChildConnection.equals(null))) {
+                    if (parentConnection != null) {
+                        Message.lockAllowed(parentConnection, username, secret); // send to parent
+                    }
+                    allowMap.remove(username);
+                }
+                if (parentConnection == null || lChildConnection != null) {
+                    Message.lockAllowed(lChildConnection, username, secret);
+                    allowMap.remove(username);
+                }
             }
+            allowMap.put(username, allowList);
         }
+
         for (Connection temCon : clientConnections) {
             if (registerMap.containsKey(temCon)) {
                 if (registerMap.get(temCon).equals(username)) {
@@ -262,10 +292,14 @@ public class Control extends Thread {
                 Message.lockDenied(parentConnection, username, secret);
             }
             if (con.equals(lChildConnection)) {
-                Message.lockDenied(rChildConnection, username, secret);
+                if (rChildConnection != null) {
+                    Message.lockDenied(rChildConnection, username, secret);
+                }
             }
             if (con.equals(rChildConnection)) {
-                Message.lockDenied(lChildConnection, username, secret);
+                if (lChildConnection != null) {
+                    Message.lockDenied(lChildConnection, username, secret);
+                }
             }
         }
 
@@ -470,15 +504,16 @@ public class Control extends Thread {
         String secret = (String) request.get("secret");
         JSONObject activity = (JSONObject) request.get("activity");
         activity.put("authenticated_user", username);
-        JSONObject fuck = new JSONObject();
-        fuck.put("activity", activity);
-        fuck.put("command", Message.ACTIVITY_BROADCAST);
+
+        JSONObject broadcastAct = new JSONObject();
+        broadcastAct.put("activity", activity);
+        broadcastAct.put("command", Message.ACTIVITY_BROADCAST);
 
         if (!username.equals("anonymous") && !isUserLoggedInLocally(username, secret)) {
             return Message.authenticationFail(con, "the username and secret do not match the logged in the user, "
                     + "or the user has not logged in yet");
         }
-        return broadcastActivity(con, fuck);
+        return broadcastActivity(con, broadcastAct);
     }
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
