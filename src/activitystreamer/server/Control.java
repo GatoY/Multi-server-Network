@@ -430,7 +430,7 @@ public class Control extends Thread {
 
     private boolean login(Connection con, JSONObject request) {
         if (request.containsKey("username") && request.get("username").equals("anonymous")) { // anonymous login
-            Message.loginSuccess(con, "logged in as user " + true);
+            Message.loginSuccess(con, "logged in as user " + request.get("username"));
             loginVector.add(con.getSocket().getRemoteSocketAddress());
             if (checkOtherLoads() != null) {
                 return Message.redirect(con, checkOtherLoads());
@@ -505,12 +505,15 @@ public class Control extends Thread {
         String secret = (String) request.get("secret");
         JSONObject activity = (JSONObject) request.get("activity");
         activity.put("authenticated_user", username);
-
+        JSONObject broadcastAct = new JSONObject();
+        broadcastAct.put("activity", activity);
+        broadcastAct.put("command", Message.ACTIVITY_BROADCAST);
+        
         if (!username.equals("anonymous") && !isUserLoggedInLocally(username, secret)) {
             return Message.authenticationFail(con, "the username and secret do not match the logged in the user, "
                     + "or the user has not logged in yet");
         }
-        return broadcastActivity(con, activity);
+        return broadcastActivity(con, broadcastAct);
     }
 
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
