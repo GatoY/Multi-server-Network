@@ -84,8 +84,7 @@ public class ClientSkeleton extends Thread {
                 if (msg == null) {
                     break;
                 }
-                JSONObject jo = process(msg);
-
+                process(msg);
             }
         } catch (IOException | ParseException e) {
             e.printStackTrace();
@@ -125,7 +124,7 @@ public class ClientSkeleton extends Thread {
      * @throws ParseException
      * @throws IOException
      */
-	private JSONObject process(String msg) throws ParseException, IOException {
+	private void process(String msg) throws ParseException, IOException {
         JSONObject jo = (JSONObject) jp.parse(msg);
         textFrame.setOutputText(jo);
         String cmd = (String) jo.get("command");
@@ -135,7 +134,6 @@ public class ClientSkeleton extends Thread {
         } else if (cmd.equals(Message.REDIRECT)) {
             redirect(jo);
         }
-        return jo;
     }
 
 	/**
@@ -163,7 +161,5 @@ public class ClientSkeleton extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
     }
 }

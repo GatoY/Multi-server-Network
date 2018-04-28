@@ -30,7 +30,7 @@ public class Control extends Thread {
     private static Map<Connection, String[]> validateMap = new ConcurrentHashMap<>();
     private static Map<Connection, String> registerMap = new ConcurrentHashMap<>();
     // list to record if of cooperated servers;
-    private String[] serverIdList = {"0", "0", "0"};
+    private String[] serverIdList = { "0", "0", "0" };
 
     public static Control getInstance() {
         if (control == null) {
@@ -58,7 +58,6 @@ public class Control extends Thread {
         // make a connection to another server if remote hostname is supplied
         if (Settings.getRemoteHostname() != null) {
             try {
-                System.out.println("success to link to");
                 Connection c = outgoingConnection(new Socket(Settings.getRemoteHostname(), Settings.getRemotePort()));
             } catch (IOException e) {
                 log.error("failed to make connection to " + Settings.getRemoteHostname() + ":"
@@ -73,60 +72,55 @@ public class Control extends Thread {
      * connection should close.
      *
      * @param con
-     * @param msg result JSON string
+     * @param msg
+     *            result JSON string
      * @return
      */
     public synchronized boolean process(Connection con, String msg) {
         JSONObject request;
         try {
-//            System.out.println(msg);
             request = (JSONObject) new JSONParser().parse(msg);
         } catch (Exception e) {
-            System.out.println("the received message is not in valid format");
             return Message.invalidMsg(con, "the received message is not in valid format");
         }
 
         if (request.get("command") == null) {
-            System.out.println("the received message did not contain a command");
             return Message.invalidMsg(con, "the received message did not contain a command");
         }
 
         String command = (String) request.get("command");
         switch (command) {
-            case Message.INVALID_MESSAGE:
+        case Message.INVALID_MESSAGE:
+            return true;
+        case Message.AUTHENTICATE:
+            return authenticateIncomingConnection(con, request);
+        case Message.AUTHENTICATION_FAIL:
+            return authenticationFail();
+        case Message.REGISTER:
+            return register(con, request);
+        case Message.LOCK_REQUEST:
+            return onLockRequest(con, request);
+        case Message.LOCK_DENIED:
+            onLockDenied(con, request);
+            return false;
+        case Message.LOCK_ALLOWED:
+            if (onLockAllowed(con, request)) {
                 return true;
-            case Message.AUTHENTICATE:
-                return authenticateIncomingConnection(con, request);
-            case Message.AUTHENTICATION_FAIL:
-                return authenticationFail();
-            case Message.REGISTER:
-                return register(con, request);
-            case Message.LOCK_REQUEST:
-                return onLockRequest(con, request);
-            case Message.LOCK_DENIED:
-                onLockDenied(con, request);
-                return false;
-            case Message.LOCK_ALLOWED:
-                if (onLockAllowed(con, request)) {
-                    return true;
-                }
-                // addUser(con, (String) request.get("username"), (String)
-                // request.get("secret"));
-                // return Message.registerSuccess(con, "register success for " +
-                // request.get("username"));
-                return false;
-            case Message.LOGIN:
-                return login(con, request);
-            case Message.LOGOUT:
-                return logout(con);
-            case Message.ACTIVITY_MESSAGE:
-                return onReceiveActivityMessage(con, request);
-            case Message.ACTIVITY_BROADCAST:
-                return broadcastActivity(con, request);
-            case Message.SERVER_ANNOUNCE:
-                return onReceiveServerAnnounce(con, request);
+            }
+            return false;
+        case Message.LOGIN:
+            return login(con, request);
+        case Message.LOGOUT:
+            return logout(con);
+        case Message.ACTIVITY_MESSAGE:
+            return onReceiveActivityMessage(con, request);
+        case Message.ACTIVITY_BROADCAST:
+            return broadcastActivity(con, request);
+        case Message.SERVER_ANNOUNCE:
+            return onReceiveServerAnnounce(con, request);
+        default:
+            return Message.invalidMsg(con, "unknown commands");
         }
-        return true;
     }
 
     private boolean authenticateIncomingConnection(Connection con, JSONObject request) {
@@ -148,7 +142,6 @@ public class Control extends Thread {
             rChildConnection = con;
         } else {
             // socket require closing
-            System.out.println("authenticateIncomingConnection fails so I close");
             con.closeCon();
             log.debug("the connection was refused");
         }
@@ -157,7 +150,6 @@ public class Control extends Thread {
 
     private boolean authenticationFail() {
         if (parentConnection != null && parentConnection.isOpen()) {
-            System.out.println("authenticate fail so I close");
             parentConnection.closeCon();
             parentConnection = null;
         }
@@ -178,7 +170,6 @@ public class Control extends Thread {
                 return true;
             }
         }
-        System.out.println("somebody wants to register");
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
 
@@ -191,7 +182,7 @@ public class Control extends Thread {
                 return Message.registerSuccess(con, "register success for " + username);
             }
         } else { // If there're multiple servers in the system
-            String[] validatedList = {"0", "0", "0"};
+            String[] validatedList = { "0", "0", "0" };
             validateMap.put(con, validatedList);
             registerMap.put(con, username);
 
@@ -215,7 +206,6 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        System.out.println("got allowed");
         if (con.equals(parentConnection)) { // if from parent:
             if (lChildConnection != null) {
                 Message.lockAllowed(lChildConnection, username, secret); // send to left child
@@ -242,17 +232,10 @@ public class Control extends Thread {
                         flags[2] = "1";
                     }
                     validateMap.put(temCon, flags);
-                    for (String l : flags) {
-                        System.out.println(l);
-                    }
-                    for (String l : serverIdList) {
-                        System.out.println(l);
-                    }
                     if (flags[0].equals(serverIdList[0]) & flags[1].equals(serverIdList[1])
                             & flags[2].equals(serverIdList[2])) {
                         validateMap.remove(temCon);
                         registerMap.remove(temCon);
-                        System.out.println("register success!!!");
                         Message.registerSuccess(temCon, "register success for " + username);
                     }
                     return false;
@@ -268,7 +251,6 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        System.out.println("got denied");
         if (con.equals(parentConnection)) {
             if (lChildConnection != null) {
                 Message.lockDenied(lChildConnection, username, secret);
@@ -280,13 +262,18 @@ public class Control extends Thread {
             if (parentConnection != null) {
                 Message.lockDenied(parentConnection, username, secret);
             }
+            if (con.equals(lChildConnection)) {
+                Message.lockDenied(rChildConnection, username, secret);
+            }
+            if (con.equals(rChildConnection)) {
+                Message.lockDenied(lChildConnection, username, secret);
+            }
         }
 
         for (Connection temCon : clientConnections) {
             if (registerMap.containsKey(temCon)) {
                 if (registerMap.get(temCon).equals(username)) {
                     Message.registerFailed(temCon, username + " is already registered with the system");
-                    System.out.println("register failed so I closed");
                     temCon.closeCon();
                 }
             }
@@ -305,7 +292,6 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        System.out.println("got request");
         if (isUserRegistered(username)) { // almost useless
             for (User user : userList) {
                 if (user.getUserName().equals(username) & user.getPassword().equals(secret)) {
@@ -351,6 +337,9 @@ public class Control extends Thread {
     }
 
     private void addUser(Connection con, String username, String secret) {
+        if (con.equals(null)) {
+            User user = new User(null, username, secret);
+        }
         User user = new User(con.getSocket().getRemoteSocketAddress(), username, secret);
         userList.add(user);
     }
@@ -371,7 +360,7 @@ public class Control extends Thread {
     }
 
     private boolean onReceiveServerAnnounce(Connection con, JSONObject request) {
-//        loadMap.put(con, ((Long) request.get("load")).intValue());
+        // loadMap.put(con, ((Long) request.get("load")).intValue());
         loadMap.put(request.get("hostname") + ":" + request.get("port"), ((Long) request.get("load")).intValue());
         if (parentConnection != null && con != parentConnection) {
             parentConnection.writeMsg(request.toJSONString());
@@ -399,7 +388,6 @@ public class Control extends Thread {
     private String checkOtherLoads() {
         for (Map.Entry<String, Integer> entry : loadMap.entrySet()) {
             if (clientConnections.size() - entry.getValue() >= 2) {
-                System.out.println("return get key");
                 return entry.getKey();
             }
         }
@@ -411,7 +399,6 @@ public class Control extends Thread {
             Message.loginSuccess(con, "logged in as user " + true);
             loginVector.add(con.getSocket().getRemoteSocketAddress());
             if (checkOtherLoads() != null) {
-                //return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
                 return Message.redirect(con, checkOtherLoads());
             }
             return false;
@@ -424,6 +411,7 @@ public class Control extends Thread {
                     foundUser = true;
                     if (user.getPassword().equals(secret)) {
                         Message.loginSuccess(con, "logged in as user " + username);
+                        // Here's a bug.
                         loginVector.add(user.getLocalSocketAddress());
                         if (checkOtherLoads() != null) {
                             return Message.redirect(con, Objects.requireNonNull(checkOtherLoads()));
@@ -438,7 +426,6 @@ public class Control extends Thread {
                 return Message.loginFailed(con, "attempt to login with wrong username");
             }
         } else {
-            System.out.println("missed username or secret");
             return Message.invalidMsg(con, "missed username or secret");
         }
         loginVector.add(con.getSocket().getRemoteSocketAddress());
@@ -454,7 +441,6 @@ public class Control extends Thread {
             }
         }
         if (logout) {
-            System.out.println("logout so I closed");
             con.closeCon();
         }
         return logout;
@@ -493,7 +479,6 @@ public class Control extends Thread {
         return broadcastActivity(con, activity);
     }
 
-
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
         for (Connection c : clientConnections) {
             Message.activityBroadcast(c, activity);
@@ -510,7 +495,6 @@ public class Control extends Thread {
         }
         return false;
     }
-
 
     /**
      * The connection has been closed by the other party.
@@ -592,7 +576,6 @@ public class Control extends Thread {
         log.info("closing " + clientConnections.size() + " client connections");
         // clean up
         for (Connection connection : clientConnections) {
-            System.out.println("term==true so I close");
             connection.closeCon();
         }
 
