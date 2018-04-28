@@ -221,13 +221,13 @@ public class Control extends Thread {
             }
             if (con.equals(lChildConnection)) { // sent from lChild node.
                 allowList[1] = "1";
-                if (allowList[2].equals("1") || (rChildConnection.equals(null))) {
+                if (allowList[2].equals("1") || rChildConnection.equals(null)) {
                     if (parentConnection != null) {
                         Message.lockAllowed(parentConnection, username, secret); // send to parent
                     }
                     allowMap.remove(username);
                 }
-                if (parentConnection == null) {
+                if (parentConnection == null || rChildConnection != null) {
                     Message.lockAllowed(rChildConnection, username, secret);
                     allowMap.remove(username);
                 }
@@ -240,7 +240,7 @@ public class Control extends Thread {
                     }
                     allowMap.remove(username);
                 }
-                if (parentConnection == null) {
+                if (parentConnection == null || lChildConnection != null) {
                     Message.lockAllowed(lChildConnection, username, secret);
                     allowMap.remove(username);
                 }
