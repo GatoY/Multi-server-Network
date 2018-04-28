@@ -172,7 +172,7 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        //System.out.println("1");
+        // System.out.println("1");
         // If there's only one server in the system
         if (parentConnection == null && lChildConnection == null && rChildConnection == null) {
             if (isUserRegistered(username)) {
@@ -185,7 +185,7 @@ public class Control extends Thread {
             String[] validatedList = { "0", "0", "0" };
             validateMap.put(con, validatedList);
             registerMap.put(con, username);
-            //allowMap.put(username, validatedList);
+            // allowMap.put(username, validatedList);
             addUser(con, username, secret);
             if (parentConnection != null) {
                 Message.lockRequest(parentConnection, username, secret);
@@ -206,27 +206,27 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        //System.out.println("2");
+        // System.out.println("2");
         if (allowMap.containsKey(username)) {
             String[] allowList = allowMap.get(username);
 
             if (con.equals(parentConnection)) { // sent from parent node.
                 if (lChildConnection != null) {
-                    //System.out.println("8");
+                    // System.out.println("8");
                     Message.lockAllowed(lChildConnection, username, secret); // send to left child
                 }
                 if (rChildConnection != null) {
-                    //System.out.println("9");
+                    // System.out.println("9");
                     Message.lockAllowed(rChildConnection, username, secret); // send to right child
                 }
                 allowMap.remove(username);
             }
             if (con.equals(lChildConnection)) { // sent from lChild node.
                 allowList[1] = "1";
-                //System.out.println(allowList[2]);
-                if (allowList[2].equals("1") || rChildConnection==null) {
+                // System.out.println(allowList[2]);
+                if (allowList[2].equals("1") || rChildConnection == null) {
                     if (parentConnection != null) {
-                        //System.out.println("5");
+                        // System.out.println("5");
                         Message.lockAllowed(parentConnection, username, secret); // send to parent
                     }
                     allowMap.remove(username);
@@ -240,13 +240,13 @@ public class Control extends Thread {
                 allowList[2] = "1";
                 if (allowList[1].equals("1") || (lChildConnection.equals(null))) {
                     if (parentConnection != null) {
-                        //System.out.println("6");
+                        // System.out.println("6");
                         Message.lockAllowed(parentConnection, username, secret); // send to parent
                     }
                     allowMap.remove(username);
                 }
                 if (parentConnection == null || lChildConnection != null) {
-                    //System.out.println("7");
+                    // System.out.println("7");
                     Message.lockAllowed(lChildConnection, username, secret);
                     allowMap.remove(username);
                 }
@@ -289,7 +289,7 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        //System.out.println("3");
+        // System.out.println("3");
         if (con.equals(parentConnection)) {
             if (lChildConnection != null) {
                 Message.lockDenied(lChildConnection, username, secret);
@@ -335,7 +335,7 @@ public class Control extends Thread {
         }
         String username = (String) request.get("username");
         String secret = (String) request.get("secret");
-        //System.out.println("4");
+        // System.out.println("4");
         String[] validatedList = { "0", "0", "0" };
         allowMap.put(username, validatedList);
         if (isUserRegistered(username)) { // almost useless
@@ -486,9 +486,7 @@ public class Control extends Thread {
                 logout = true;
             }
         }
-        if (logout) {
-            con.closeCon();
-        }
+        con.closeCon();
         return logout;
     }
 
