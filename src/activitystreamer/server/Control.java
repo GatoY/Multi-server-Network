@@ -399,7 +399,6 @@ public class Control extends Thread {
             Message.loginSuccess(con, "logged in as user " + true);
             loginVector.add(con.getSocket().getRemoteSocketAddress());
             if (checkOtherLoads() != null) {
-                // return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
                 return Message.redirect(con, checkOtherLoads());
             }
             return false;
