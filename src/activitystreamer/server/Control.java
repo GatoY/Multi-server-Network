@@ -209,7 +209,8 @@ public class Control extends Thread {
         String secret = (String) request.get("secret");
         if (allowMap.containsKey(username)) {
             String[] allowList = allowMap.get(username);
-            if(con.equals(parentConnection)) {
+
+            if (con.equals(parentConnection)) { // sent from parent node.
                 if (lChildConnection != null) {
                     Message.lockAllowed(lChildConnection, username, secret); // send to left child
                 }
@@ -218,21 +219,29 @@ public class Control extends Thread {
                 }
                 allowMap.remove(username);
             }
-            if(con.equals(lChildConnection)) {
-                allowList[1]="1";
-                if(allowList[2].equals("1")) {
-                    if (parentConnection != null) {
-                        Message.lockAllowed(parentConnection, username, secret); // send to parent            
-                    }
-                    allowMap.remove(username);
-                }
-            }
-            if(con.equals(rChildConnection)) {
-                allowList[2]="1";
-                if(allowList[1].equals("1")) {
+            if (con.equals(lChildConnection)) { // sent from lChild node.
+                allowList[1] = "1";
+                if (allowList[2].equals("1") || (rChildConnection.equals(null))) {
                     if (parentConnection != null) {
                         Message.lockAllowed(parentConnection, username, secret); // send to parent
                     }
+                    allowMap.remove(username);
+                }
+                if (parentConnection == null) {
+                    Message.lockAllowed(rChildConnection, username, secret);
+                    allowMap.remove(username);
+                }
+            }
+            if (con.equals(rChildConnection)) { // sent from rChild node.
+                allowList[2] = "1";
+                if (allowList[1].equals("1") || (lChildConnection.equals(null))) {
+                    if (parentConnection != null) {
+                        Message.lockAllowed(parentConnection, username, secret); // send to parent
+                    }
+                    allowMap.remove(username);
+                }
+                if (parentConnection == null) {
+                    Message.lockAllowed(lChildConnection, username, secret);
                     allowMap.remove(username);
                 }
             }
