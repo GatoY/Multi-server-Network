@@ -30,7 +30,7 @@ public class Control extends Thread {
     private static Map<Connection, String[]> validateMap = new ConcurrentHashMap<>();
     private static Map<Connection, String> registerMap = new ConcurrentHashMap<>();
     // list to record if of cooperated servers;
-    private String[] serverIdList = {"0", "0", "0"};
+    private String[] serverIdList = { "0", "0", "0" };
 
     public static Control getInstance() {
         if (control == null) {
@@ -72,7 +72,8 @@ public class Control extends Thread {
      * connection should close.
      *
      * @param con
-     * @param msg result JSON string
+     * @param msg
+     *            result JSON string
      * @return
      */
     public synchronized boolean process(Connection con, String msg) {
@@ -89,40 +90,37 @@ public class Control extends Thread {
 
         String command = (String) request.get("command");
         switch (command) {
-            case Message.INVALID_MESSAGE:
+        case Message.INVALID_MESSAGE:
+            return true;
+        case Message.AUTHENTICATE:
+            return authenticateIncomingConnection(con, request);
+        case Message.AUTHENTICATION_FAIL:
+            return authenticationFail();
+        case Message.REGISTER:
+            return register(con, request);
+        case Message.LOCK_REQUEST:
+            return onLockRequest(con, request);
+        case Message.LOCK_DENIED:
+            onLockDenied(con, request);
+            return false;
+        case Message.LOCK_ALLOWED:
+            if (onLockAllowed(con, request)) {
                 return true;
-            case Message.AUTHENTICATE:
-                return authenticateIncomingConnection(con, request);
-            case Message.AUTHENTICATION_FAIL:
-                return authenticationFail();
-            case Message.REGISTER:
-                return register(con, request);
-            case Message.LOCK_REQUEST:
-                return onLockRequest(con, request);
-            case Message.LOCK_DENIED:
-                onLockDenied(con, request);
-                return false;
-            case Message.LOCK_ALLOWED:
-                if (onLockAllowed(con, request)) {
-                    return true;
-                }
-                // addUser(con, (String) request.get("username"), (String)
-                // request.get("secret"));
-                // return Message.registerSuccess(con, "register success for " +
-                // request.get("username"));
-                return false;
-            case Message.LOGIN:
-                return login(con, request);
-            case Message.LOGOUT:
-                return logout(con);
-            case Message.ACTIVITY_MESSAGE:
-                return onReceiveActivityMessage(con, request);
-            case Message.ACTIVITY_BROADCAST:
-                return broadcastActivity(con, request);
-            case Message.SERVER_ANNOUNCE:
-                return onReceiveServerAnnounce(con, request);
+            }
+            return false;
+        case Message.LOGIN:
+            return login(con, request);
+        case Message.LOGOUT:
+            return logout(con);
+        case Message.ACTIVITY_MESSAGE:
+            return onReceiveActivityMessage(con, request);
+        case Message.ACTIVITY_BROADCAST:
+            return broadcastActivity(con, request);
+        case Message.SERVER_ANNOUNCE:
+            return onReceiveServerAnnounce(con, request);
+        default:
+            return Message.invalidMsg(con, "unknown commands");
         }
-        return true;
     }
 
     private boolean authenticateIncomingConnection(Connection con, JSONObject request) {
@@ -184,7 +182,7 @@ public class Control extends Thread {
                 return Message.registerSuccess(con, "register success for " + username);
             }
         } else { // If there're multiple servers in the system
-            String[] validatedList = {"0", "0", "0"};
+            String[] validatedList = { "0", "0", "0" };
             validateMap.put(con, validatedList);
             registerMap.put(con, username);
 
@@ -339,7 +337,7 @@ public class Control extends Thread {
     }
 
     private void addUser(Connection con, String username, String secret) {
-        if(con.equals(null)) {
+        if (con.equals(null)) {
             User user = new User(null, username, secret);
         }
         User user = new User(con.getSocket().getRemoteSocketAddress(), username, secret);
@@ -362,7 +360,7 @@ public class Control extends Thread {
     }
 
     private boolean onReceiveServerAnnounce(Connection con, JSONObject request) {
-//        loadMap.put(con, ((Long) request.get("load")).intValue());
+        // loadMap.put(con, ((Long) request.get("load")).intValue());
         loadMap.put(request.get("hostname") + ":" + request.get("port"), ((Long) request.get("load")).intValue());
         if (parentConnection != null && con != parentConnection) {
             parentConnection.writeMsg(request.toJSONString());
@@ -401,7 +399,7 @@ public class Control extends Thread {
             Message.loginSuccess(con, "logged in as user " + true);
             loginVector.add(con.getSocket().getRemoteSocketAddress());
             if (checkOtherLoads() != null) {
-                //return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
+                // return Message.redirect(Objects.requireNonNull(checkOtherLoads(con)));
                 return Message.redirect(con, checkOtherLoads());
             }
             return false;
@@ -414,7 +412,7 @@ public class Control extends Thread {
                     foundUser = true;
                     if (user.getPassword().equals(secret)) {
                         Message.loginSuccess(con, "logged in as user " + username);
-                        //Here's a bug.
+                        // Here's a bug.
                         loginVector.add(user.getLocalSocketAddress());
                         if (checkOtherLoads() != null) {
                             return Message.redirect(con, Objects.requireNonNull(checkOtherLoads()));
@@ -443,7 +441,6 @@ public class Control extends Thread {
                 logout = true;
             }
         }
-        // maybe useless
         if (logout) {
             con.closeCon();
         }
@@ -483,7 +480,6 @@ public class Control extends Thread {
         return broadcastActivity(con, activity);
     }
 
-
     private boolean broadcastActivity(Connection sourceConnection, JSONObject activity) {
         for (Connection c : clientConnections) {
             Message.activityBroadcast(c, activity);
@@ -500,7 +496,6 @@ public class Control extends Thread {
         }
         return false;
     }
-
 
     /**
      * The connection has been closed by the other party.
