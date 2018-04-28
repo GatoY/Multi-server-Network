@@ -181,4 +181,23 @@ public class Message {
         return false;
     }
 
+    public static JSONObject connCloseMsg() {
+        JSONObject json = new JSONObject();
+        StringBuilder sb = new StringBuilder();
+        sb.append("connection closed to /");
+        sb.append(Settings.getRemoteHostname() + ":" + Settings.getRemotePort());
+        sb.append(", please restart new connection");
+        json.put("info", sb.toString());
+        return json;
+    }
+    
+    public static JSONObject redirectMsg() {
+        JSONObject json = new JSONObject();
+        StringBuilder sb = new StringBuilder();
+        sb.append("Start new connection to /");
+        sb.append(Settings.getRemoteHostname() + ":" + Settings.getRemotePort());
+        sb.append(", please wait");
+        json.put("info", sb.toString());
+        return json;
+    }
 }
