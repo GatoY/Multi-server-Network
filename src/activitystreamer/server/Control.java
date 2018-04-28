@@ -293,10 +293,14 @@ public class Control extends Thread {
                 Message.lockDenied(parentConnection, username, secret);
             }
             if (con.equals(lChildConnection)) {
-                Message.lockDenied(rChildConnection, username, secret);
+                if (rChildConnection != null) {
+                    Message.lockDenied(rChildConnection, username, secret);
+                }
             }
             if (con.equals(rChildConnection)) {
-                Message.lockDenied(lChildConnection, username, secret);
+                if (lChildConnection != null) {
+                    Message.lockDenied(lChildConnection, username, secret);
+                }
             }
         }
 
